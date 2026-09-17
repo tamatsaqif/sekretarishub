@@ -982,7 +982,9 @@ async function loadFromSupabase() {
   try {
     // Load tasks
     const tasks = await fetchTasks();
-    if (tasks.length) state.tasks = tasks;
+    if (Array.isArray(tasks)) {
+      state.tasks = tasks;
+    }
   } catch (err) {
     console.warn("Gagal load tugas dari Supabase:", err);
   }
@@ -1008,6 +1010,7 @@ async function loadFromSupabase() {
     console.warn("Gagal load absensi dari Supabase:", err);
   }
 
+  saveState();
   renderAll();
 }
 
