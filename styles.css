@@ -584,6 +584,34 @@ textarea {
   flex-wrap: wrap;
 }
 
+.secret-login-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.secret-login-btn:hover {
+  opacity: 1;
+  border-color: var(--line);
+}
+
+.admin-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
 .auth-status {
   font-size: 0.78rem;
   color: var(--muted);

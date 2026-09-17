@@ -308,7 +308,7 @@ const elements = {
   adminBadge: document.querySelector("#adminBadge"),
   loginModal: document.querySelector("#loginModal"),
   loginForm: document.querySelector("#loginForm"),
-  loginEmail: document.querySelector("#loginEmail"),
+  loginUsername: document.querySelector("#loginUsername"),
   loginPassword: document.querySelector("#loginPassword"),
   loginError: document.querySelector("#loginError"),
   loginSubmitBtn: document.querySelector("#loginSubmitBtn"),
@@ -901,14 +901,15 @@ function closeLoginModal() {
 }
 
 function updateAuthUI(session) {
-  currentSession = session;
   const loggedIn = !!session;
 
   elements.loginBtn.classList.toggle("hidden", loggedIn);
   elements.logoutBtn.classList.toggle("hidden", !loggedIn);
-  elements.authStatus.textContent = loggedIn
-    ? `✅ ${session.user.email}`
-    : "";
+  elements.adminBadge.classList.toggle("hidden", !loggedIn);
+  if (loggedIn) {
+    const displayName = session.user.email ? session.user.email.split("@")[0] : "Sekretaris";
+    elements.adminBadge.textContent = `✏️ ${displayName}`;
+  }
 
   // Sembunyikan tombol edit jika belum login
   const editBtns = document.querySelectorAll(
@@ -929,9 +930,12 @@ elements.logoutBtn.addEventListener("click", async () => {
 
 elements.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const email = elements.loginEmail.value.trim();
+  const rawInput = elements.loginUsername.value.trim().toLowerCase();
   const password = elements.loginPassword.value;
   const submitBtn = elements.loginSubmitBtn;
+
+  // Format otomatis: jika input berupa username biasa (tanpa @), tambahkan domain default
+  const email = rawInput.includes("@") ? rawInput : `${rawInput}@sekretaris.local`;
 
   submitBtn.disabled = true;
   submitBtn.textContent = "Masuk...";
@@ -941,7 +945,7 @@ elements.loginForm.addEventListener("submit", async (event) => {
     await signIn(email, password);
     closeLoginModal();
   } catch (err) {
-    elements.loginError.textContent = "Email atau password salah. Coba lagi.";
+    elements.loginError.textContent = "Username atau password salah. Coba lagi.";
     elements.loginError.classList.remove("hidden");
   } finally {
     submitBtn.disabled = false;
