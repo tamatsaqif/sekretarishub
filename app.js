@@ -945,7 +945,18 @@ elements.loginForm.addEventListener("submit", async (event) => {
     await signIn(email, password);
     closeLoginModal();
   } catch (err) {
-    elements.loginError.textContent = "Username atau password salah. Coba lagi.";
+    console.error("Login gagal:", err);
+    let msg = "Username atau password salah.";
+    if (err && err.message) {
+      if (err.message.includes("Invalid login credentials")) {
+        msg = `Password salah atau akun "${rawInput}" (${email}) belum dibuat di Supabase.`;
+      } else if (err.message.includes("Email not confirmed")) {
+        msg = "Email belum dikonfirmasi di Supabase (centang Auto Confirm).";
+      } else {
+        msg = err.message;
+      }
+    }
+    elements.loginError.textContent = msg;
     elements.loginError.classList.remove("hidden");
   } finally {
     submitBtn.disabled = false;
