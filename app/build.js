@@ -1,5 +1,4 @@
 // build.js — dijalankan Vercel saat deploy
-// Baca env vars dan generate env.js untuk dipakai browser
 import { writeFileSync, existsSync } from "fs";
 
 const url = process.env.SUPABASE_URL;
@@ -16,7 +15,7 @@ export const SUPABASE_ANON_KEY = ${JSON.stringify(key)};
 `;
 
 writeFileSync("env.js", content);
-if (existsSync("app")) {
-  writeFileSync("app/env.js", content);
+if (existsSync("../index.html")) {
+  writeFileSync("../env.js", content);
 }
 console.log("✅ env.js berhasil di-generate.");
