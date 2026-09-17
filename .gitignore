@@ -1,0 +1,5 @@
+# File ini di-generate saat build — jangan di-commit ke GitHub
+env.js
+
+# Dependencies
+node_modules/

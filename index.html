@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sekretaris 9 SCP 2</title>
+    <meta
+      name="description"
+      content="Workspace sekretaris kelas 9 SCP 2 untuk jadwal, tugas, piket, absensi, dan Daily Class Info."
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  </head>
+  <body>
+    <canvas id="gridPulseCanvas" aria-hidden="true"></canvas>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <p class="brand-kicker">9 SCP 2</p>
+          <h1>Daily Class Info</h1>
+        </div>
+        <div class="topbar-actions">
+          <!-- Tombol login kecil & samar — pengunjung biasa nggak notice -->
+          <button id="loginBtn" class="secret-login-btn" type="button" title="Sekretaris" aria-label="Login sekretaris">•••</button>
+          <button id="logoutBtn" class="ghost-btn hidden" type="button">Keluar</button>
+          <span id="adminBadge" class="admin-badge hidden">✏️ Sekretaris</span>
+          <button id="generateBtn" class="primary-btn" type="button">Buat info</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel hero-panel">
+          <div class="panel-label">Hari ini</div>
+          <h2 id="todayDate">Selasa, 15 September 2026</h2>
+          <div class="quick-grid">
+            <div>
+              <span class="mini-label">Mapel</span>
+              <ul id="todaySubjectsQuick" class="quick-list"></ul>
+            </div>
+            <div>
+              <span class="mini-label">Piket</span>
+              <ul id="todayPiketQuick" class="quick-list"></ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel subjects-panel">
+          <div class="section-head">
+            <h3>📚 Mapel Hari Ini</h3>
+            <button class="ghost-btn admin-only hidden" type="button" id="openScheduleModalBtn">Atur jadwal</button>
+          </div>
+          <ul id="subjectsList" class="stack-list"></ul>
+        </section>
+
+        <section class="panel tasks-panel">
+          <div class="section-head">
+            <h3>📝 Tugas</h3>
+            <button class="ghost-btn admin-only hidden" type="button" id="addTaskBtn">Tambah tugas</button>
+          </div>
+          <div id="tasksList" class="tasks-list"></div>
+        </section>
+
+        <section class="panel piket-panel">
+          <div class="section-head">
+            <h3>🧹 Piket Hari Ini</h3>
+            <button class="ghost-btn admin-only hidden" type="button" id="openPiketModalBtn">Atur piket</button>
+          </div>
+          <ul id="piketList" class="stack-list"></ul>
+        </section>
+
+        <section class="panel attendance-panel">
+          <div class="section-head">
+            <h3>📋 Absensi</h3>
+            <button class="ghost-btn admin-only hidden" type="button" id="resetAttendanceBtn">Reset</button>
+          </div>
+
+          <label class="search-box" for="attendanceSearch">
+            <span>🔎</span>
+            <input id="attendanceSearch" type="search" placeholder="Cari siswa" />
+          </label>
+
+          <div id="attendanceList" class="attendance-list"></div>
+        </section>
+
+        <section class="panel notes-panel">
+          <div class="section-head slim">
+            <h3>🗒️ Catatan</h3>
+          </div>
+          <textarea id="notesInput" rows="4" placeholder="Tulis catatan hari ini..."></textarea>
+        </section>
+
+        <section class="panel preview-panel">
+          <div class="section-head">
+            <h3>Preview Daily Class Info</h3>
+          </div>
+          <div id="dailyInfoPreview" class="message-preview" aria-live="polite"></div>
+
+          <div class="action-row">
+            <button id="copyBtn" class="primary-btn" type="button">Salin</button>
+            <button id="shareBtn" class="secondary-btn" type="button">Bagikan</button>
+            <a
+              id="whatsappBtn"
+              class="link-btn"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Pilih grup WhatsApp untuk mengirim Daily Class Info"
+            >
+              WhatsApp
+            </a>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="taskModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h3 id="taskModalTitle">Tambah tugas</h3>
+          <button type="button" class="close-btn" data-close-modal="taskModal">×</button>
+        </div>
+
+        <form id="taskForm">
+          <div class="field-group">
+            <label for="taskSubject">Mapel</label>
+            <input id="taskSubject" name="subject" type="text" placeholder="Contoh: B. Indo" required />
+          </div>
+
+          <div class="field-group">
+            <label for="taskDescription">Deskripsi</label>
+            <input id="taskDescription" name="description" type="text" placeholder="Contoh: Membuat teks pidato" required />
+          </div>
+
+          <div class="field-group">
+            <label for="taskDeadline">Deadline</label>
+            <input id="taskDeadline" name="deadline" type="date" required />
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="secondary-btn" data-close-modal="taskModal">Batal</button>
+            <button type="submit" class="primary-btn">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="scheduleModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-card wide">
+        <div class="modal-head">
+          <h3>Jadwal kelas</h3>
+          <button type="button" class="close-btn" data-close-modal="scheduleModal">×</button>
+        </div>
+
+        <div id="scheduleModalBody" class="modal-body"></div>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" data-close-modal="scheduleModal">Batal</button>
+          <button type="button" class="primary-btn" id="saveScheduleBtn">Simpan jadwal</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="piketModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-card wide">
+        <div class="modal-head">
+          <h3>Piket harian</h3>
+          <button type="button" class="close-btn" data-close-modal="piketModal">×</button>
+        </div>
+
+        <div id="piketModalBody" class="modal-body"></div>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" data-close-modal="piketModal">Batal</button>
+          <button type="button" class="primary-btn" id="savePiketBtn">Simpan piket</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Modal (Supabase) -->
+    <div id="loginModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h3>✏️ Mode Sekretaris</h3>
+          <button type="button" class="close-btn" data-close-modal="loginModal">×</button>
+        </div>
+        <form id="loginForm">
+          <div class="field-group">
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" name="email" type="email" placeholder="email sekretaris" required autocomplete="email" />
+          </div>
+          <div class="field-group">
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+          <p id="loginError" class="form-error hidden">Email atau password salah.</p>
+          <div class="modal-actions">
+            <button type="button" class="secondary-btn" data-close-modal="loginModal">Batal</button>
+            <button type="submit" class="primary-btn" id="loginSubmitBtn">Masuk</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
