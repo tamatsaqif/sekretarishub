@@ -2,8 +2,11 @@
 // Baca env vars dan generate env.js untuk dipakai browser
 import { writeFileSync, existsSync } from "fs";
 
-const url = process.env.SUPABASE_URL;
-const key = process.env.SUPABASE_ANON_KEY;
+const rawUrl = process.env.SUPABASE_URL || "";
+const rawKey = process.env.SUPABASE_ANON_KEY || "";
+
+const url = rawUrl.trim();
+const key = rawKey.trim();
 
 if (!url || !key) {
   console.error("❌ SUPABASE_URL atau SUPABASE_ANON_KEY belum diset di Vercel Environment Variables!");

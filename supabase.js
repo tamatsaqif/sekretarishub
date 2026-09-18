@@ -7,8 +7,11 @@
 // ============================================================
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./env.js";
 
+const cleanUrl = (SUPABASE_URL || "").trim();
+const cleanKey = (SUPABASE_ANON_KEY || "").trim();
+
 const { createClient } = window.supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = createClient(cleanUrl, cleanKey);
 
 // ============================================================
 // AUTH HELPERS
