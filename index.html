@@ -72,7 +72,10 @@
         <section class="panel attendance-panel">
           <div class="section-head">
             <h3>📋 Absensi</h3>
-            <button class="ghost-btn admin-only hidden" type="button" id="resetAttendanceBtn">Reset</button>
+            <div class="head-actions">
+              <button class="inline-btn" type="button" id="copyAttendanceOnlyBtn" title="Salin rekap absensi saja">📋 Salin Rekap</button>
+              <button class="ghost-btn admin-only hidden" type="button" id="resetAttendanceBtn">Reset</button>
+            </div>
           </div>
 
           <label class="search-box" for="attendanceSearch">
@@ -91,8 +94,13 @@
         </section>
 
         <section class="panel preview-panel">
-          <div class="section-head">
-            <h3>Preview Daily Class Info</h3>
+          <div class="section-head preview-head">
+            <h3>Preview Info</h3>
+            <div class="tab-group" id="previewTabs">
+              <button type="button" class="tab-btn active" data-mode="tomorrow">🌙 Info Besok</button>
+              <button type="button" class="tab-btn" data-mode="today">☀️ Info Hari Ini</button>
+              <button type="button" class="tab-btn" data-mode="attendance">📋 Rekap Absensi</button>
+            </div>
           </div>
           <div id="dailyInfoPreview" class="message-preview" aria-live="polite"></div>
 

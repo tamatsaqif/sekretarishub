@@ -302,6 +302,8 @@ const elements = {
   resetAttendanceBtn: document.querySelector("#resetAttendanceBtn"),
   openScheduleModalBtn: document.querySelector("#openScheduleModalBtn"),
   openPiketModalBtn: document.querySelector("#openPiketModalBtn"),
+  copyAttendanceOnlyBtn: document.querySelector("#copyAttendanceOnlyBtn"),
+  previewTabs: document.querySelector("#previewTabs"),
   // Auth elements
   loginBtn: document.querySelector("#loginBtn"),
   logoutBtn: document.querySelector("#logoutBtn"),
@@ -400,11 +402,27 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function getTodayKey(date = new Date()) {
+function getDateKey(date = new Date()) {
   const weekday = date.getDay();
   const map = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const key = map[weekday];
-  return ["Saturday", "Sunday"].includes(key) ? "Friday" : key;
+  return ["Saturday", "Sunday"].includes(key) ? "Monday" : key;
+}
+
+function getTodayKey(date = new Date()) {
+  return getDateKey(date);
+}
+
+function getTomorrowDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  // Jika besok Sabtu/Minggu, arahkan ke Senin
+  if (d.getDay() === 6) {
+    d.setDate(d.getDate() + 2);
+  } else if (d.getDay() === 0) {
+    d.setDate(d.getDate() + 1);
+  }
+  return d;
 }
 
 function formatDate(date = new Date()) {
@@ -419,6 +437,10 @@ function formatDate(date = new Date()) {
 function capitalizeFirst(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+// Mode preview: 'tomorrow' | 'today' | 'attendance'
+// Default jam >= 15.00 sore = info besok, pagi/siang = info hari ini
+let currentPreviewMode = new Date().getHours() >= 15 ? "tomorrow" : "today";
 
 function renderDateInfo() {
   const todayKey = getTodayKey();
@@ -510,23 +532,62 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
-function generateDailyInfo() {
-  const todayKey = getTodayKey();
+function formatSection(label, lines) {
+  const linesText = lines.map((line) => `│ • ${line}`).join("\n");
+  return `╭─ ${label}\n${linesText}\n╰──────────────`;
+}
+
+function generateAttendanceReportText() {
   const todayDate = formatDate();
-  const subjects = state.schedule[todayKey] || [];
-  const piket = state.piket[todayKey] || [];
+  const total = STUDENTS.length;
+  const masuk = STUDENTS.filter((s) => (state.attendance[s] || "Masuk") === "Masuk");
+  const sakit = STUDENTS.filter((s) => state.attendance[s] === "Sakit");
+  const izin = STUDENTS.filter((s) => state.attendance[s] === "Izin");
+  const alpha = STUDENTS.filter((s) => state.attendance[s] === "Alpha");
+  const notPresent = STUDENTS.filter((s) => (state.attendance[s] || "Masuk") !== "Masuk");
+
+  let text = `୨୧ ─── 𝐋𝐀𝐏𝐎𝐑𝐀𝐍 𝐀𝐁𝐒𝐄𝐍𝐒𝐈 ─── ୨୧\n\n`;
+  text += `🗓️ ${todayDate}\n`;
+  text += `🏫 Kelas: 9 SCP 2\n\n`;
+  text += `📊 REKAP KEHADIRAN:\n`;
+  text += `• Total Siswa : ${total}\n`;
+  text += `• Masuk        : ${masuk.length}\n`;
+  text += `• Sakit        : ${sakit.length}\n`;
+  text += `• Izin         : ${izin.length}\n`;
+  text += `• Alpha        : ${alpha.length}\n\n`;
+
+  if (notPresent.length) {
+    text += `📝 KETERANGAN TIDAK MASUK:\n`;
+    notPresent.forEach((student, index) => {
+      text += `${index + 1}. ${student} (${state.attendance[student]})\n`;
+    });
+  } else {
+    text += `📝 KETERANGAN TIDAK MASUK:\n• Nihil (Semua hadir ✨)\n`;
+  }
+
+  text += `\n୨୧ ───────────────── ୨୧`;
+  return text;
+}
+
+function generateDailyInfo(mode = currentPreviewMode) {
+  if (mode === "attendance") {
+    return generateAttendanceReportText();
+  }
+
+  const isTomorrow = mode === "tomorrow";
+  const targetDate = isTomorrow ? getTomorrowDate() : new Date();
+  const targetKey = getDateKey(targetDate);
+  const targetDateStr = formatDate(targetDate);
+
+  const subjects = state.schedule[targetKey] || [];
+  const piket = state.piket[targetKey] || [];
   const tasks = state.tasks;
-  const absent = STUDENTS.filter((student) => state.attendance[student] !== "Masuk");
-  const note = state.notes.trim() || "Tidak ada catatan hari ini.";
+  const note = state.notes.trim() || "Kalau ada yang kurang atau salah bisa dikoreksi dan ditambahin yaa!";
 
-  const formatSection = (label, lines) => {
-    const linesText = lines.map((line) => `│ • ${line}`).join("\n");
-    return `╭─ ${label}\n${linesText}\n╰──────────────`;
-  };
+  let message = `୨୧ ──── 𝐃𝐀𝐈𝐋𝐘 𝐂𝐋𝐀𝐒𝐒 𝐈𝐍𝐅𝐎 ──── ୨୧\n\n🗓️ ${targetDateStr}\n\n`;
 
-  let message = `୨୧ ──── 𝐃𝐀𝐈𝐋𝐘 𝐂𝐋𝐀𝐒𝐒 𝐈𝐍𝐅𝐎 ──── ୨୧\n\n🗓️ ${todayDate}\n\n`;
-
-  message += `${formatSection("📚 MAPEL HARI INI", subjects || ["Belum ada jadwal hari ini."])}\n\n`;
+  const mapelTitle = isTomorrow ? "📚 MAPEL BESOK" : "📚 MAPEL HARI INI";
+  message += `${formatSection(mapelTitle, subjects.length ? subjects : ["Belum ada jadwal."])}\n\n`;
 
   if (tasks.length) {
     const taskLines = tasks.flatMap((task) => [
@@ -537,25 +598,37 @@ function generateDailyInfo() {
     taskLines.pop();
     message += `╭─ 📝 TUGAS\n${taskLines.map((line) => `${line.startsWith("  ↳") ? "│" : "│ "}${line}`).join("\n")}\n╰──────────────\n\n`;
   } else {
-    message += `╭─ 📝 TUGAS\n│ • Tidak ada tugas hari ini.\n╰──────────────\n\n`;
+    message += `╭─ 📝 TUGAS\n│ • Tidak ada tugas.\n╰──────────────\n\n`;
   }
 
-  message += `${formatSection("🧹 PIKET HARI INI", piket.length ? piket : ["Belum ada piket hari ini."])}\n\n`;
+  const piketTitle = isTomorrow ? "🧹 PIKET BESOK" : "🧹 PIKET HARI INI";
+  message += `${formatSection(piketTitle, piket.length ? piket : ["Belum ada piket."])}\n\n`;
 
-  if (absent.length) {
-    const absentText = absent.map((student) => `• ${student} (${state.attendance[student]})`);
-    message += `╭─ 📋 ABSENSI\n│ Tidak masuk:\n${absentText.map((line) => `│ ${line}`).join("\n")}\n╰──────────────\n\n`;
-  } else {
-    message += `╭─ 📋 ABSENSI\n│ Tidak masuk:\n│ • Nihil\n╰──────────────\n\n`;
+  // Absensi HANYA ditampilkan di mode 'today' (saat info hari ini)
+  if (!isTomorrow) {
+    const absent = STUDENTS.filter((student) => (state.attendance[student] || "Masuk") !== "Masuk");
+    if (absent.length) {
+      const absentText = absent.map((student) => `• ${student} (${state.attendance[student]})`);
+      message += `╭─ 📋 ABSENSI\n│ Tidak masuk:\n${absentText.map((line) => `│ ${line}`).join("\n")}\n╰──────────────\n\n`;
+    } else {
+      message += `╭─ 📋 ABSENSI\n│ Tidak masuk:\n│ • Nihil\n╰──────────────\n\n`;
+    }
   }
 
-  message += `🗒️ CATATAN\n╰┈➤ ${note}\n\n૮ ˶ᵔ ᵕ ᵔ˶ ა\nSemangat guys! 😸\n\n୨୧ ───────────────── ୨୧`;
+  const closing = isTomorrow ? "Semangat buat besok guys! 😸" : "Semangat guys! 😸";
+  message += `🗒️ CATATAN\n╰┈➤ ${note}\n\n૮ ˶ᵔ ᵕ ᵔ˶ ა\n${closing}\n\n୨୧ ───────────────── ୨୧`;
 
   return message;
 }
 
 function renderPreview() {
-  const text = generateDailyInfo();
+  if (elements.previewTabs) {
+    elements.previewTabs.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.mode === currentPreviewMode);
+    });
+  }
+
+  const text = generateDailyInfo(currentPreviewMode);
   elements.dailyInfoPreview.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
 
   const whatsappText = encodeURIComponent(text);
@@ -859,6 +932,27 @@ elements.generateBtn.addEventListener("click", () => {
   renderPreview();
   elements.dailyInfoPreview.scrollIntoView({ behavior: "smooth", block: "nearest" });
 });
+
+if (elements.previewTabs) {
+  elements.previewTabs.addEventListener("click", (event) => {
+    const btn = event.target.closest(".tab-btn");
+    if (!btn || !btn.dataset.mode) return;
+    currentPreviewMode = btn.dataset.mode;
+    renderPreview();
+  });
+}
+
+if (elements.copyAttendanceOnlyBtn) {
+  elements.copyAttendanceOnlyBtn.addEventListener("click", async () => {
+    const text = generateAttendanceReportText();
+    await navigator.clipboard.writeText(text);
+    const originalText = elements.copyAttendanceOnlyBtn.textContent;
+    elements.copyAttendanceOnlyBtn.textContent = "Tersalin! ✅";
+    setTimeout(() => {
+      elements.copyAttendanceOnlyBtn.textContent = originalText;
+    }, 1500);
+  });
+}
 
 elements.addTaskBtn.addEventListener("click", () => openTaskModal());
 
