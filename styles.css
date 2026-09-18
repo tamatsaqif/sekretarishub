@@ -416,18 +416,24 @@ textarea {
   margin-top: 14px;
 }
 
+/* ============================================================
+   IOS DRAWER BOTTOM SHEET (MODAL)
+   ============================================================ */
+
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(20, 20, 20, 0.46);
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 16px;
-  z-index: 20;
+  padding: 0;
+  z-index: 50;
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1), visibility 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .modal.hidden {
@@ -437,27 +443,44 @@ textarea {
 }
 
 .modal-card {
-  width: min(100%, 480px);
-  background: var(--surface);
+  width: min(100%, 560px);
+  background: rgba(253, 253, 253, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  padding: 18px 16px 16px;
-  transform: translateY(0) scale(1);
-  transition: transform 0.22s ease, opacity 0.22s ease;
+  border-bottom: none;
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.18);
+  padding: 10px 20px 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+  transform: translateY(0);
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.28s ease;
   opacity: 1;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-card::before {
+  content: "";
+  display: block;
+  width: 38px;
+  height: 5px;
+  background: rgba(60, 60, 67, 0.22);
+  border-radius: 9999px;
+  margin: 2px auto 14px;
+  cursor: grab;
+  flex-shrink: 0;
 }
 
 .modal.hidden .modal-card {
-  transform: translateY(12px) scale(0.96);
-  opacity: 0;
+  transform: translateY(100%);
+  opacity: 0.5;
 }
 
 .modal-card.wide {
   width: min(100%, 720px);
   max-height: 88vh;
-  display: flex;
-  flex-direction: column;
 }
 
 .modal-head {
@@ -469,15 +492,31 @@ textarea {
 
 .modal-head h3 {
   margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .close-btn {
-  min-width: 36px;
-  min-height: 36px;
-  background: transparent;
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
   color: var(--muted);
-  font-size: 1.5rem;
-  border: 1px solid var(--line);
+  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--ink);
 }
 
 .field-group {
@@ -488,20 +527,30 @@ textarea {
 
 .field-group label {
   font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--muted);
 }
 
 .field-group input {
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.field-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(52, 52, 52, 0.12);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 14px;
 }
 
 .modal-body {
@@ -529,6 +578,22 @@ textarea {
 }
 
 @media (min-width: 760px) {
+  .modal {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .modal-card {
+    border-radius: 24px;
+    border-bottom: 1px solid var(--line);
+    padding: 20px 24px 22px;
+  }
+
+  .modal.hidden .modal-card {
+    transform: translateY(20px) scale(0.96);
+    opacity: 0;
+  }
+
   .layout {
     grid-template-columns: 1.2fr 0.8fr;
   }
