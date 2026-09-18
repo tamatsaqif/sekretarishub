@@ -78,10 +78,10 @@ create policy "Auth write piket"      on piket      for all using (auth.role() =
 -- ============================================================
 
 insert into schedule (day, subjects) values
-  ('Monday',    array['B.ING','PJOK','IPA','B.ING','IPA','B.ING','B.ARAB','B.INDO']),
-  ('Tuesday',   array['PJOK','AL ISLAM','IPS','MATEMATIKA','B.INDO','KMD','PEND. PANCASILA']),
-  ('Wednesday', array['PEND. PANCASILA','INFORMATIKA','B.INDO','IPA','PEND. PANCASILA','B.INDO','SENI RUPA']),
-  ('Thursday',  array['AL ISLAM','IPS','MATEMATIKA','KMD','B.INDO','PEND. PANCASILA']),
+  ('Monday',    array['B.ING','IPA','BTQ Kelas 9','B.ARAB','Program Peminatan']),
+  ('Tuesday',   array['PJOK','AL ISLAM','BTQ Kelas 9','PEND. PANCASILA','B.INDO']),
+  ('Wednesday', array['BK','IPS','BTQ Kelas 9','INFORMATIKA','IPA']),
+  ('Thursday',  array['MATH','KMD','BTQ Kelas 9','B.INDO','SENI RUPA']),
   ('Friday',    array['B.ING','PJOK','IPA','B.INDO','SENI RUPA','PEND. PANCASILA'])
 on conflict (day) do update set subjects = excluded.subjects;
 

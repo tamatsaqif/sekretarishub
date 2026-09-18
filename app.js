@@ -203,10 +203,10 @@ function normalizeWeekdays(dayMap) {
 
 const defaultState = {
   schedule: {
-    Monday: ["B.ING", "PJOK", "IPA", "B.ING", "IPA", "B.ING", "B.ARAB", "B.INDO"],
-    Tuesday: ["PJOK", "AL ISLAM", "IPS", "MATEMATIKA", "B.INDO", "KMD", "PEND. PANCASILA"],
-    Wednesday: ["PEND. PANCASILA", "INFORMATIKA", "B.INDO", "IPA", "PEND. PANCASILA", "B.INDO", "SENI RUPA"],
-    Thursday: ["AL ISLAM", "IPS", "MATEMATIKA", "KMD", "B.INDO", "PEND. PANCASILA"],
+    Monday: ["B.ING", "IPA", "BTQ Kelas 9", "B.ARAB", "Program Peminatan"],
+    Tuesday: ["PJOK", "AL ISLAM", "BTQ Kelas 9", "PEND. PANCASILA", "B.INDO"],
+    Wednesday: ["BK", "IPS", "BTQ Kelas 9", "INFORMATIKA", "IPA"],
+    Thursday: ["MATH", "KMD", "BTQ Kelas 9", "B.INDO", "SENI RUPA"],
     Friday: ["B.ING", "PJOK", "IPA", "B.INDO", "SENI RUPA", "PEND. PANCASILA"]
   },
   piket: {
