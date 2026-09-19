@@ -719,7 +719,7 @@ function generateDailyInfo(mode = currentPreviewMode) {
   }
 
   const closing = isTomorrow ? "Semangat buat besok guys! 😸" : "Semangat guys! 😸";
-  message += `🗒️ CATATAN\n╰┈➤ ${note}\n\n૮ ˶ᵔ ᵕ ᵔ˶ ა\n${closing}\n\n୨୧ ───────────────── ୨୧`;
+  message += `🗒️ CATATAN\n╰┈➤ ${note}\n\n૮ ˶ᵔ ᵕ ᵔ˶ ა\n${closing}\nhttps://science2hub.vercel.app\n\n୨୧ ───────────────── ୨୧`;
 
   return message;
 }
