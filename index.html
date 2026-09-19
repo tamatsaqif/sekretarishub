@@ -2,12 +2,13 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sekretaris 9 SCP 2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Sekretaris 9 SCP 2 — Daily Class Info</title>
     <meta
       name="description"
       content="Workspace sekretaris kelas 9 SCP 2 untuk jadwal, tugas, piket, absensi, dan Daily Class Info."
     />
+    <meta name="theme-color" content="#f4f4f5" />
     <!-- Apple SF Pro Font -->
     <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
@@ -16,201 +17,510 @@
   </head>
   <body>
     <canvas id="gridPulseCanvas" aria-hidden="true"></canvas>
+
     <div class="app-shell">
+      <!-- TOPBAR -->
       <header class="topbar">
         <div class="brand-block">
-          <p class="brand-kicker">9 SCP 2</p>
+          <div class="brand-kicker-row">
+            <span class="brand-badge">9 SCP 2</span>
+            <span class="live-dot" title="Sistem Aktif"></span>
+          </div>
           <h1>Daily Class Info</h1>
         </div>
+
         <div class="topbar-actions">
-          <!-- Tombol login kecil & samar — pengunjung biasa nggak notice -->
-          <button id="loginBtn" class="secret-login-btn" type="button" title="Sekretaris" aria-label="Login sekretaris">•••</button>
-          <button id="logoutBtn" class="ghost-btn hidden" type="button">Keluar</button>
-          <span id="adminBadge" class="admin-badge hidden">✏️ Sekretaris</span>
-          <button id="generateBtn" class="primary-btn" type="button">Buat info</button>
+          <!-- Secret login trigger -->
+          <button id="loginBtn" class="secret-login-btn" type="button" title="Mode Sekretaris (Login)" aria-label="Login sekretaris">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="1.5"></circle>
+              <circle cx="19" cy="12" r="1.5"></circle>
+              <circle cx="5" cy="12" r="1.5"></circle>
+            </svg>
+          </button>
+
+          <span id="adminBadge" class="admin-badge hidden">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span id="adminBadgeText">Sekretaris</span>
+          </span>
+
+          <button id="logoutBtn" class="ghost-btn hidden" type="button" aria-label="Keluar dari akun">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Keluar</span>
+          </button>
+
+          <button id="generateBtn" class="primary-btn pulse-action" type="button">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v3m0 12v3M3 12h3m12 0h3m-2.636-6.364l-2.121 2.121M7.757 16.243l-2.121 2.121m0-12.728l2.121 2.121m8.486 8.486l2.121 2.121"></path>
+            </svg>
+            <span>Buat Info</span>
+          </button>
         </div>
       </header>
 
+      <!-- MAIN BENTO LAYOUT -->
       <main class="layout">
+        <!-- 1. HERO PANEL -->
         <section class="panel hero-panel">
-          <div class="panel-label">Hari ini</div>
-          <h2 id="todayDate">Selasa, 15 September 2026</h2>
+          <div class="panel-header-row">
+            <div class="panel-tag">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>Hari Ini</span>
+            </div>
+            <div class="hero-chip" id="heroSummaryChip">9 SCP 2 Workspace</div>
+          </div>
+
+          <h2 id="todayDate">Memuat tanggal...</h2>
+
           <div class="quick-grid">
-            <div>
-              <span class="mini-label">Mapel</span>
+            <div class="quick-card">
+              <div class="quick-card-head">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span class="mini-label">Mata Pelajaran</span>
+              </div>
               <ul id="todaySubjectsQuick" class="quick-list"></ul>
             </div>
-            <div>
-              <span class="mini-label">Piket</span>
+
+            <div class="quick-card">
+              <div class="quick-card-head">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                </svg>
+                <span class="mini-label">Petugas Piket</span>
+              </div>
               <ul id="todayPiketQuick" class="quick-list"></ul>
             </div>
           </div>
         </section>
 
+        <!-- 2. SUBJECTS PANEL -->
         <section class="panel subjects-panel">
           <div class="section-head">
-            <h3>📚 Mapel Hari Ini</h3>
-            <button class="ghost-btn admin-only hidden" type="button" id="openScheduleModalBtn">Atur jadwal</button>
+            <div class="section-title">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+              </div>
+              <h3>Mapel Hari Ini</h3>
+            </div>
+            <button class="ghost-btn admin-only hidden drawer-trigger-btn" type="button" id="openScheduleModalBtn" title="Buka panel jadwal pelajaran">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span>Atur Jadwal</span>
+            </button>
           </div>
           <ul id="subjectsList" class="stack-list"></ul>
         </section>
 
+        <!-- 3. TASKS PANEL -->
         <section class="panel tasks-panel">
           <div class="section-head">
-            <h3>📝 Tugas</h3>
-            <button class="ghost-btn admin-only hidden" type="button" id="addTaskBtn">Tambah tugas</button>
+            <div class="section-title">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="9 11 12 14 22 4"></polyline>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+              </div>
+              <h3>Tugas & PR</h3>
+            </div>
+            <button class="ghost-btn admin-only hidden drawer-trigger-btn" type="button" id="addTaskBtn" title="Buka panel tambah tugas">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Tambah Tugas</span>
+            </button>
           </div>
           <div id="tasksList" class="tasks-list"></div>
         </section>
 
+        <!-- 4. PIKET PANEL -->
         <section class="panel piket-panel">
           <div class="section-head">
-            <h3>🧹 Piket Hari Ini</h3>
-            <button class="ghost-btn admin-only hidden" type="button" id="openPiketModalBtn">Atur piket</button>
+            <div class="section-title">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                </svg>
+              </div>
+              <h3>Piket Hari Ini</h3>
+            </div>
+            <button class="ghost-btn admin-only hidden drawer-trigger-btn" type="button" id="openPiketModalBtn" title="Buka panel petugas piket">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span>Atur Piket</span>
+            </button>
           </div>
-          <ul id="piketList" class="stack-list"></ul>
+          <ul id="piketList" class="stack-list piket-stack"></ul>
         </section>
 
+        <!-- 5. ATTENDANCE PANEL -->
         <section class="panel attendance-panel">
           <div class="section-head">
-            <h3>📋 Absensi</h3>
+            <div class="section-title">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <div>
+                <h3>Absensi Kelas</h3>
+                <p class="section-subtitle" id="attendanceSummaryText">Total: 33 Siswa</p>
+              </div>
+            </div>
             <div class="head-actions">
-              <button class="inline-btn" type="button" id="copyAttendanceOnlyBtn" title="Salin rekap absensi saja">📋 Salin Rekap</button>
-              <button class="ghost-btn admin-only hidden" type="button" id="resetAttendanceBtn">Reset</button>
+              <button class="inline-btn" type="button" id="copyAttendanceOnlyBtn" title="Salin rekap absensi saja">
+                <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Salin Rekap</span>
+              </button>
+              <button class="ghost-btn admin-only hidden" type="button" id="resetAttendanceBtn" title="Reset semua status ke Masuk">
+                <span>Reset</span>
+              </button>
             </div>
           </div>
 
-          <label class="search-box" for="attendanceSearch">
-            <span>🔎</span>
-            <input id="attendanceSearch" type="search" placeholder="Cari siswa" />
-          </label>
+          <!-- Attendance Stats Pills -->
+          <div class="attendance-stats-bar" id="attendanceStatsBar">
+            <span class="stat-pill total"><strong id="statTotalCount">33</strong> Siswa</span>
+            <span class="stat-pill masuk"><strong id="statMasukCount">33</strong> Masuk</span>
+            <span class="stat-pill sakit" id="statSakitPill"><strong id="statSakitCount">0</strong> Sakit</span>
+            <span class="stat-pill izin" id="statIzinPill"><strong id="statIzinCount">0</strong> Izin</span>
+            <span class="stat-pill alpha" id="statAlphaPill"><strong id="statAlphaCount">0</strong> Alpha</span>
+          </div>
+
+          <div class="search-box">
+            <svg class="icon-svg mini search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input id="attendanceSearch" type="search" placeholder="Cari nama siswa..." aria-label="Cari siswa" />
+            <button id="clearSearchBtn" class="search-clear-btn hidden" type="button" aria-label="Hapus pencarian">×</button>
+          </div>
 
           <div id="attendanceList" class="attendance-list"></div>
         </section>
 
+        <!-- 6. NOTES PANEL -->
         <section class="panel notes-panel">
           <div class="section-head slim">
-            <h3>🗒️ Catatan</h3>
+            <div class="section-title">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <h3>Catatan Harian</h3>
+            </div>
+            <span class="save-status-indicator" id="notesStatusIndicator">Tersimpan</span>
           </div>
-          <textarea id="notesInput" rows="4" placeholder="Tulis catatan hari ini..."></textarea>
+          <textarea id="notesInput" rows="3" placeholder="Tulis catatan tambahan hari ini..."></textarea>
         </section>
 
+        <!-- 7. PREVIEW PANEL -->
         <section class="panel preview-panel">
           <div class="section-head preview-head">
-            <h3>Preview Info</h3>
-            <div class="tab-group" id="previewTabs">
-              <button type="button" class="tab-btn active" data-mode="tomorrow">🌙 Info Besok</button>
-              <button type="button" class="tab-btn" data-mode="today">☀️ Info Hari Ini</button>
-              <button type="button" class="tab-btn" data-mode="attendance">📋 Rekap Absensi</button>
+            <div class="section-title">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </div>
+              <h3>Pratinjau Pesan</h3>
+            </div>
+
+            <!-- Segmented Preview Tabs with Smooth Sliding Active State -->
+            <div class="tab-group" id="previewTabs" role="tablist">
+              <button type="button" class="tab-btn active" data-mode="tomorrow" role="tab" aria-selected="true">
+                <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <span>Info Besok</span>
+              </button>
+              <button type="button" class="tab-btn" data-mode="today" role="tab" aria-selected="false">
+                <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <span>Info Hari Ini</span>
+              </button>
+              <button type="button" class="tab-btn" data-mode="attendance" role="tab" aria-selected="false">
+                <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+                <span>Rekap Absensi</span>
+              </button>
             </div>
           </div>
+
           <div id="dailyInfoPreview" class="message-preview" aria-live="polite"></div>
 
           <div class="action-row">
-            <button id="copyBtn" class="primary-btn" type="button">Salin</button>
-            <button id="shareBtn" class="secondary-btn" type="button">Bagikan</button>
+            <button id="copyBtn" class="primary-btn action-btn-scale" type="button">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Salin Pesan</span>
+            </button>
+            <button id="shareBtn" class="secondary-btn action-btn-scale" type="button">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              <span>Bagikan</span>
+            </button>
             <a
               id="whatsappBtn"
-              class="link-btn"
+              class="whatsapp-btn action-btn-scale"
               href="#"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Pilih grup WhatsApp untuk mengirim Daily Class Info"
             >
-              WhatsApp
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2ZM12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19.01L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67ZM8.6 7.42C8.42 7.42 8.12 7.49 7.87 7.76C7.62 8.03 6.91 8.69 6.91 10.05C6.91 11.4 7.9 12.71 8.04 12.89C8.17 13.08 9.98 15.86 12.75 17.06C13.41 17.34 13.92 17.52 14.33 17.65C14.99 17.86 15.6 17.83 16.08 17.76C16.61 17.68 17.72 17.09 17.95 16.44C18.19 15.79 18.19 15.24 18.12 15.12C18.05 15.01 17.87 14.94 17.6 14.81C17.33 14.67 16.01 14.02 15.76 13.93C15.52 13.84 15.34 13.79 15.16 14.07C14.98 14.34 14.47 14.94 14.31 15.12C14.16 15.31 14 15.33 13.73 15.2C13.46 15.06 12.59 14.78 11.55 13.85C10.74 13.13 10.2 12.24 10.04 11.97C9.89 11.7 10.03 11.55 10.16 11.42C10.28 11.3 10.43 11.1 10.57 10.94C10.71 10.78 10.75 10.66 10.84 10.48C10.93 10.3 10.89 10.14 10.82 10.01C10.75 9.87 10.21 8.54 9.98 8.01C9.77 7.5 9.54 7.57 9.38 7.56L8.87 7.55C8.69 7.55 8.6 7.42 8.6 7.42Z"/>
+              </svg>
+              <span>Kirim ke WhatsApp</span>
             </a>
           </div>
         </section>
       </main>
     </div>
 
-    <div id="taskModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card">
-        <div class="modal-head">
-          <h3 id="taskModalTitle">Tambah tugas</h3>
-          <button type="button" class="close-btn" data-close-modal="taskModal">×</button>
+    <!-- ============================================================
+         SLIDING DRAWERS & MODALS (Spring slide from Right/Bottom)
+         ============================================================ -->
+
+    <!-- 1. SLIDING DRAWER: ATUR JADWAL (WITH SLIDING DAY TABS) -->
+    <div id="scheduleModal" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel wide" role="dialog" aria-modal="true" aria-labelledby="scheduleDrawerTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Sekretaris Workspace</span>
+            <h3 id="scheduleDrawerTitle">Atur Jadwal Pelajaran</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" data-close-modal="scheduleModal" aria-label="Tutup panel jadwal">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
-        <form id="taskForm">
-          <div class="field-group">
-            <label for="taskSubject">Mapel</label>
-            <input id="taskSubject" name="subject" type="text" placeholder="Contoh: B. Indo" required />
+        <!-- Sliding Day Switcher Inside Drawer -->
+        <div class="drawer-tab-wrapper">
+          <div class="drawer-tab-bar" id="scheduleDayTabs" role="tablist">
+            <button type="button" class="drawer-day-tab active" data-day="all">Semua</button>
+            <button type="button" class="drawer-day-tab" data-day="Monday">Senin</button>
+            <button type="button" class="drawer-day-tab" data-day="Tuesday">Selasa</button>
+            <button type="button" class="drawer-day-tab" data-day="Wednesday">Rabu</button>
+            <button type="button" class="drawer-day-tab" data-day="Thursday">Kamis</button>
+            <button type="button" class="drawer-day-tab" data-day="Friday">Jumat</button>
           </div>
-
-          <div class="field-group">
-            <label for="taskDescription">Deskripsi</label>
-            <input id="taskDescription" name="description" type="text" placeholder="Contoh: Membuat teks pidato" required />
-          </div>
-
-          <div class="field-group">
-            <label for="taskDeadline">Deadline</label>
-            <input id="taskDeadline" name="deadline" type="date" required />
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" data-close-modal="taskModal">Batal</button>
-            <button type="submit" class="primary-btn">Simpan</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div id="scheduleModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card wide">
-        <div class="modal-head">
-          <h3>Jadwal kelas</h3>
-          <button type="button" class="close-btn" data-close-modal="scheduleModal">×</button>
         </div>
 
-        <div id="scheduleModalBody" class="modal-body"></div>
+        <p class="drawer-instruction">Pisahkan setiap mata pelajaran dengan baris baru (Enter) atau tanda koma (,).</p>
 
-        <div class="modal-actions">
+        <div id="scheduleModalBody" class="drawer-body"></div>
+
+        <div class="drawer-footer">
           <button type="button" class="secondary-btn" data-close-modal="scheduleModal">Batal</button>
-          <button type="button" class="primary-btn" id="saveScheduleBtn">Simpan jadwal</button>
+          <button type="button" class="primary-btn" id="saveScheduleBtn">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Simpan Jadwal</span>
+          </button>
         </div>
       </div>
     </div>
 
-    <div id="piketModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card wide">
-        <div class="modal-head">
-          <h3>Piket harian</h3>
-          <button type="button" class="close-btn" data-close-modal="piketModal">×</button>
+    <!-- 2. SLIDING DRAWER: ATUR PIKET (WITH SLIDING DAY TABS) -->
+    <div id="piketModal" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel wide" role="dialog" aria-modal="true" aria-labelledby="piketDrawerTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Sekretaris Workspace</span>
+            <h3 id="piketDrawerTitle">Atur Petugas Piket</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" data-close-modal="piketModal" aria-label="Tutup panel piket">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
-        <div id="piketModalBody" class="modal-body"></div>
+        <!-- Sliding Day Switcher Inside Drawer -->
+        <div class="drawer-tab-wrapper">
+          <div class="drawer-tab-bar" id="piketDayTabs" role="tablist">
+            <button type="button" class="drawer-day-tab active" data-day="all">Semua</button>
+            <button type="button" class="drawer-day-tab" data-day="Monday">Senin</button>
+            <button type="button" class="drawer-day-tab" data-day="Tuesday">Selasa</button>
+            <button type="button" class="drawer-day-tab" data-day="Wednesday">Rabu</button>
+            <button type="button" class="drawer-day-tab" data-day="Thursday">Kamis</button>
+            <button type="button" class="drawer-day-tab" data-day="Friday">Jumat</button>
+          </div>
+        </div>
 
-        <div class="modal-actions">
+        <p class="drawer-instruction">Tulis nama-nama petugas piket per baris (Enter) atau pisahkan dengan koma (,).</p>
+
+        <div id="piketModalBody" class="drawer-body"></div>
+
+        <div class="drawer-footer">
           <button type="button" class="secondary-btn" data-close-modal="piketModal">Batal</button>
-          <button type="button" class="primary-btn" id="savePiketBtn">Simpan piket</button>
+          <button type="button" class="primary-btn" id="savePiketBtn">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Simpan Piket</span>
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Login Modal (Supabase) -->
-    <div id="loginModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card">
-        <div class="modal-head">
-          <h3>✏️ Mode Sekretaris</h3>
-          <button type="button" class="close-btn" data-close-modal="loginModal">×</button>
+    <!-- 3. SLIDING DRAWER: TAMBAH / EDIT TUGAS -->
+    <div id="taskModal" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Tugas & Deadline</span>
+            <h3 id="taskModalTitle">Tambah Tugas</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" data-close-modal="taskModal" aria-label="Tutup form tugas">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
-        <form id="loginForm">
-          <div class="field-group">
-            <label for="loginUsername">Username</label>
-            <input id="loginUsername" name="username" type="text" placeholder="Masukkan username" required autocomplete="username" />
+
+        <form id="taskForm" class="drawer-form">
+          <div class="drawer-body form-body">
+            <div class="field-group">
+              <label for="taskSubject">Mata Pelajaran</label>
+              <div class="input-with-icon">
+                <input id="taskSubject" name="subject" type="text" placeholder="Contoh: B. Indonesia, Matematika, IPA" required />
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="taskDescription">Deskripsi / Detail Tugas</label>
+              <textarea id="taskDescription" name="description" rows="3" placeholder="Contoh: Mengerjakan LKS halaman 34 nomor 1-10" required></textarea>
+            </div>
+
+            <div class="field-group">
+              <label for="taskDeadline">Batas Pengumpulan (Deadline)</label>
+              <input id="taskDeadline" name="deadline" type="date" required />
+            </div>
           </div>
-          <div class="field-group">
-            <label for="loginPassword">Password</label>
-            <input id="loginPassword" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
-          </div>
-          <p id="loginError" class="form-error hidden">Username atau password salah.</p>
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" data-close-modal="loginModal">Batal</button>
-            <button type="submit" class="primary-btn" id="loginSubmitBtn">Masuk</button>
+
+          <div class="drawer-footer">
+            <button type="button" class="secondary-btn" data-close-modal="taskModal">Batal</button>
+            <button type="submit" class="primary-btn" id="taskSubmitBtn">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Simpan Tugas</span>
+            </button>
           </div>
         </form>
       </div>
     </div>
+
+    <!-- 4. MODAL: MODE SEKRETARIS (LOGIN) -->
+    <div id="loginModal" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel auth-drawer" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Autentikasi</span>
+            <h3 id="loginTitle">Mode Sekretaris</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" data-close-modal="loginModal" aria-label="Tutup form login">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <form id="loginForm" class="drawer-form">
+          <div class="drawer-body form-body">
+            <p class="auth-helper-text">Masuk sebagai pengurus kelas untuk sinkronisasi data jadwal, piket, dan tugas.</p>
+
+            <div class="field-group">
+              <label for="loginUsername">Username / Email</label>
+              <input id="loginUsername" name="username" type="text" placeholder="Masukkan username" required autocomplete="username" />
+            </div>
+
+            <div class="field-group">
+              <label for="loginPassword">Kata Sandi</label>
+              <input id="loginPassword" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+            </div>
+
+            <p id="loginError" class="form-error hidden" role="alert"></p>
+          </div>
+
+          <div class="drawer-footer">
+            <button type="button" class="secondary-btn" data-close-modal="loginModal">Batal</button>
+            <button type="submit" class="primary-btn" id="loginSubmitBtn">
+              <span>Masuk</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
     <script src="app.js" type="module"></script>
   </body>
