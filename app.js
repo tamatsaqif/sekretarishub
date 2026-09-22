@@ -644,32 +644,30 @@ function formatSection(label, lines) {
 function generateAttendanceReportText() {
   const todayDate = formatDate();
   const total = STUDENTS.length;
-  const masuk = STUDENTS.filter((s) => (state.attendance[s] || "Masuk") === "Masuk");
   const sakit = STUDENTS.filter((s) => state.attendance[s] === "Sakit");
   const izin = STUDENTS.filter((s) => state.attendance[s] === "Izin");
   const alpha = STUDENTS.filter((s) => state.attendance[s] === "Alpha");
-  const notPresent = STUDENTS.filter((s) => (state.attendance[s] || "Masuk") !== "Masuk");
+  const notPresent = [...sakit, ...izin, ...alpha];
 
-  let text = `୨୧ ─── 𝐋𝐀𝐏𝐎𝐑𝐀𝐍 𝐀𝐁𝐒𝐄𝐍𝐒𝐈 ─── ୨୧\n\n`;
+  // Format baru yang lebih rapi
+  let text = `📋 PRESENSI SISWA\n`;
+  text += `═══════════════════\n\n`;
   text += `🗓️ ${todayDate}\n`;
-  text += `🏫 Kelas: 9 SCP 2\n\n`;
-  text += `📊 REKAP KEHADIRAN:\n`;
-  text += `• Total Siswa : ${total}\n`;
-  text += `• Masuk        : ${masuk.length}\n`;
-  text += `• Sakit        : ${sakit.length}\n`;
-  text += `• Izin         : ${izin.length}\n`;
-  text += `• Alpha        : ${alpha.length}\n\n`;
+  text += `🏫 Kelas: 9 SCP 2\n`;
+  text = text.trimEnd() + `\n`;
 
   if (notPresent.length) {
-    text += `📝 KETERANGAN TIDAK MASUK:\n`;
+    text += `\n`;
     notPresent.forEach((student, index) => {
-      text += `${index + 1}. ${student} (${state.attendance[student]})\n`;
+      const status = state.attendance[student];
+      text += `${index + 1}. ${student} (${status})\n`;
     });
   } else {
-    text += `📝 KETERANGAN TIDAK MASUK:\n• Nihil (Semua hadir ✨)\n`;
+    text += `\n✓ Semua hadir! ✨\n`;
   }
 
-  text += `\n୨୧ ───────────────── ୨୧`;
+  text += `\n═══════════════════\n`;
+  text += `https://science2hub.vercel.app`;
   return text;
 }
 
