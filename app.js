@@ -66,6 +66,14 @@ const STUDENTS = [
 
 const STATUS_OPTIONS = ["Masuk", "Sakit", "Izin", "Alpha"];
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const DAY_LABELS_ID = {
+  Monday: "Senin",
+  Tuesday: "Selasa",
+  Wednesday: "Rabu",
+  Thursday: "Kamis",
+  Friday: "Jumat"
+};
+
 const MONTH_NAMES = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"
@@ -88,12 +96,70 @@ function formatDeadline(value) {
   return `${new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(date)}, ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
 }
 
+function getDeadlineUrgency(value) {
+  const input = deadlineToInput(value);
+  if (!input) return { label: value, urgentClass: "" };
+  const target = new Date(`${input}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffTime = target - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return { label: `Lewat (${formatDeadline(value)})`, urgentClass: "urgent" };
+  } else if (diffDays === 0) {
+    return { label: `Hari Ini (${formatDeadline(value)})`, urgentClass: "urgent" };
+  } else if (diffDays === 1) {
+    return { label: `Besok (${formatDeadline(value)})`, urgentClass: "soon" };
+  } else {
+    return { label: formatDeadline(value), urgentClass: "" };
+  }
+}
+
+function getInitials(name) {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+// ============================================================
+// TOAST NOTIFICATIONS
+// ============================================================
+function showToast(message, type = "success") {
+  const container = document.querySelector("#toastContainer");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.setAttribute("role", "status");
+
+  const iconSvg =
+    type === "error"
+      ? `<svg class="icon-svg toast-icon" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
+      : `<svg class="icon-svg toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+  toast.innerHTML = `${iconSvg} <span>${escapeHtml(message)}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("toast-exit");
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 2600);
+}
+
+// ============================================================
+// CANVAS GRID PULSE ANIMATION
+// ============================================================
 function initGridPulse() {
   const canvas = document.querySelector("#gridPulseCanvas");
   const context = canvas?.getContext("2d");
   if (!canvas || !context || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  const cellSize = 26;
+  const cellSize = 28;
   const cells = new Map();
   let width = 0;
   let height = 0;
@@ -150,7 +216,7 @@ function initGridPulse() {
   const draw = (now) => {
     frame = 0;
     context.clearRect(0, 0, width, height);
-    context.strokeStyle = "rgba(31, 35, 40, 0.1)";
+    context.strokeStyle = "rgba(0, 0, 0, 0.05)";
     context.lineWidth = 1;
     context.beginPath();
     for (let x = 0; x <= columns; x += 1) {
@@ -170,8 +236,8 @@ function initGridPulse() {
         cells.delete(key);
         continue;
       }
-      const alpha = Math.min(0.58, Math.min(1, elapsed / 180) * Math.min(1, remaining / 700) * 0.58);
-      context.fillStyle = `rgba(55, 60, 64, ${alpha})`;
+      const alpha = Math.min(0.45, Math.min(1, elapsed / 180) * Math.min(1, remaining / 700) * 0.45);
+      context.fillStyle = `rgba(13, 148, 136, ${alpha})`;
       context.fillRect(cell.column * cellSize + 2, cell.row * cellSize + 2, cellSize - 3, cellSize - 3);
     }
 
@@ -272,6 +338,11 @@ if (!localStorage.getItem(ATTENDANCE_DEFAULT_MIGRATION)) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 let editingTaskId = null;
+let isSekretarisLoggedIn = false;
+
+// Drawer active filter states
+let currentScheduleTab = "all";
+let currentPiketTab = "all";
 
 const elements = {
   todayDate: document.querySelector("#todayDate"),
@@ -282,7 +353,18 @@ const elements = {
   piketList: document.querySelector("#piketList"),
   attendanceList: document.querySelector("#attendanceList"),
   attendanceSearch: document.querySelector("#attendanceSearch"),
+  clearSearchBtn: document.querySelector("#clearSearchBtn"),
+  attendanceSummaryText: document.querySelector("#attendanceSummaryText"),
+  statTotalCount: document.querySelector("#statTotalCount"),
+  statMasukCount: document.querySelector("#statMasukCount"),
+  statSakitCount: document.querySelector("#statSakitCount"),
+  statIzinCount: document.querySelector("#statIzinCount"),
+  statAlphaCount: document.querySelector("#statAlphaCount"),
+  statSakitPill: document.querySelector("#statSakitPill"),
+  statIzinPill: document.querySelector("#statIzinPill"),
+  statAlphaPill: document.querySelector("#statAlphaPill"),
   notesInput: document.querySelector("#notesInput"),
+  notesStatusIndicator: document.querySelector("#notesStatusIndicator"),
   dailyInfoPreview: document.querySelector("#dailyInfoPreview"),
   copyBtn: document.querySelector("#copyBtn"),
   shareBtn: document.querySelector("#shareBtn"),
@@ -297,8 +379,10 @@ const elements = {
   taskDeadline: document.querySelector("#taskDeadline"),
   scheduleModal: document.querySelector("#scheduleModal"),
   scheduleModalBody: document.querySelector("#scheduleModalBody"),
+  scheduleDayTabs: document.querySelector("#scheduleDayTabs"),
   piketModal: document.querySelector("#piketModal"),
   piketModalBody: document.querySelector("#piketModalBody"),
+  piketDayTabs: document.querySelector("#piketDayTabs"),
   resetAttendanceBtn: document.querySelector("#resetAttendanceBtn"),
   openScheduleModalBtn: document.querySelector("#openScheduleModalBtn"),
   openPiketModalBtn: document.querySelector("#openPiketModalBtn"),
@@ -308,6 +392,7 @@ const elements = {
   loginBtn: document.querySelector("#loginBtn"),
   logoutBtn: document.querySelector("#logoutBtn"),
   adminBadge: document.querySelector("#adminBadge"),
+  adminBadgeText: document.querySelector("#adminBadgeText"),
   loginModal: document.querySelector("#loginModal"),
   loginForm: document.querySelector("#loginForm"),
   loginUsername: document.querySelector("#loginUsername"),
@@ -325,39 +410,13 @@ function loadState() {
   }
 
   const legacyStudentNames = [
-    "Adinda Putri",
-    "Alif Rahman",
-    "Anisa Sari",
-    "Ardiansyah",
-    "Alya Nabila",
-    "Bima Pratama",
-    "Citra Dewi",
-    "Daffa Rizki",
-    "Della Amanda",
-    "Dimas Akbar",
-    "Eka Putra",
-    "Fajar Ramadhan",
-    "Farah Aulia",
-    "Gilang Permana",
-    "Hanif Maulana",
-    "Hana Safitri",
-    "Ilham Kurniawan",
-    "Inaya Zahra",
-    "Jihan Azzahra",
-    "Khalid Hidayat",
-    "Lina Maharani",
-    "M. Ridho",
-    "Maya Salsabila",
-    "Nadia Lestari",
-    "Naufal Arif",
-    "Omar Fadli",
-    "Pandu Wibowo",
-    "Qori Azzahra",
-    "Raka Pratama",
-    "Rizky Ananda",
-    "Salsa Fitri",
-    "Tegar Putra",
-    "Zahra Kamilah"
+    "Adinda Putri", "Alif Rahman", "Anisa Sari", "Ardiansyah", "Alya Nabila",
+    "Bima Pratama", "Citra Dewi", "Daffa Rizki", "Della Amanda", "Dimas Akbar",
+    "Eka Putra", "Fajar Ramadhan", "Farah Aulia", "Gilang Permana", "Hanif Maulana",
+    "Hana Safitri", "Ilham Kurniawan", "Inaya Zahra", "Jihan Azzahra", "Khalid Hidayat",
+    "Lina Maharani", "M. Ridho", "Maya Salsabila", "Nadia Lestari", "Naufal Arif",
+    "Omar Fadli", "Pandu Wibowo", "Qori Azzahra", "Raka Pratama", "Rizky Ananda",
+    "Salsa Fitri", "Tegar Putra", "Zahra Kamilah"
   ];
 
   if (saved && saved.attendance) {
@@ -416,7 +475,6 @@ function getTodayKey(date = new Date()) {
 function getTomorrowDate() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  // Jika besok Sabtu/Minggu, arahkan ke Senin
   if (d.getDay() === 6) {
     d.setDate(d.getDate() + 2);
   } else if (d.getDay() === 0) {
@@ -439,7 +497,6 @@ function capitalizeFirst(text) {
 }
 
 // Mode preview: 'tomorrow' | 'today' | 'attendance'
-// Default jam >= 15.00 sore = info besok, pagi/siang = info hari ini
 let currentPreviewMode = new Date().getHours() >= 15 ? "tomorrow" : "today";
 
 function renderDateInfo() {
@@ -470,52 +527,99 @@ function renderTasks() {
   if (!state.tasks.length) {
     elements.tasksList.innerHTML = `
       <div class="empty-state">
-        Belum ada tugas hari ini.<br />
-        <button class="inline-btn" type="button" data-action="new-task">+ Tambah tugas</button>
+        <p>Belum ada tugas atau PR aktif.</p>
+        <button class="inline-btn admin-only ${isSekretarisLoggedIn ? '' : 'hidden'}" type="button" data-action="new-task">+ Tambah Tugas</button>
       </div>
     `;
     return;
   }
 
   elements.tasksList.innerHTML = state.tasks
-    .map(
-      (task) => `
+    .map((task) => {
+      const urgency = getDeadlineUrgency(task.deadline);
+      return `
         <article class="task-item">
-          <div class="task-main"><strong>${escapeHtml(task.subject)}</strong> — ${escapeHtml(task.description)}</div>
-          <div class="task-meta">Deadline: ${escapeHtml(formatDeadline(task.deadline))}</div>
-          <div class="task-actions">
-            <button class="inline-btn" type="button" data-action="edit-task" data-id="${task.id}">Edit</button>
-            <button class="inline-btn" type="button" data-action="delete-task" data-id="${task.id}">Hapus</button>
+          <div class="task-main">
+            <strong>${escapeHtml(task.subject)}</strong> — ${escapeHtml(task.description)}
+          </div>
+          <div class="task-meta-row">
+            <span class="deadline-badge ${urgency.urgentClass}">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              ${escapeHtml(urgency.label)}
+            </span>
+            <div class="task-actions admin-only ${isSekretarisLoggedIn ? '' : 'hidden'}">
+              <button class="inline-btn" type="button" data-action="edit-task" data-id="${task.id}" title="Edit tugas">Edit</button>
+              <button class="inline-btn" type="button" data-action="delete-task" data-id="${task.id}" title="Hapus tugas">Hapus</button>
+            </div>
           </div>
         </article>
-      `
-    )
+      `;
+    })
     .join("");
 }
 
 function renderAttendance() {
   const query = elements.attendanceSearch.value.trim().toLowerCase();
+  elements.clearSearchBtn.classList.toggle("hidden", query.length === 0);
+
   const filtered = STUDENTS.filter((student) => student.toLowerCase().includes(query));
 
+  // Count attendance stats
+  const total = STUDENTS.length;
+  let masuk = 0;
+  let sakit = 0;
+  let izin = 0;
+  let alpha = 0;
+
+  STUDENTS.forEach((student) => {
+    const status = state.attendance[student] || "Masuk";
+    if (status === "Masuk") masuk++;
+    else if (status === "Sakit") sakit++;
+    else if (status === "Izin") izin++;
+    else if (status === "Alpha") alpha++;
+  });
+
+  elements.statTotalCount.textContent = total;
+  elements.statMasukCount.textContent = masuk;
+  elements.statSakitCount.textContent = sakit;
+  elements.statIzinCount.textContent = izin;
+  elements.statAlphaCount.textContent = alpha;
+
+  elements.statSakitPill.style.display = sakit > 0 ? "inline-flex" : "none";
+  elements.statIzinPill.style.display = izin > 0 ? "inline-flex" : "none";
+  elements.statAlphaPill.style.display = alpha > 0 ? "inline-flex" : "none";
+
+  const notPresentCount = sakit + izin + alpha;
+  elements.attendanceSummaryText.textContent =
+    notPresentCount === 0
+      ? `Semua Hadir (${total} Siswa)`
+      : `${masuk} Hadir, ${notPresentCount} Tidak Hadir`;
+
   if (!filtered.length) {
-    elements.attendanceList.innerHTML = '<div class="empty-state">Tidak ada siswa yang cocok.</div>';
+    elements.attendanceList.innerHTML = '<div class="empty-state">Tidak ada nama siswa yang cocok.</div>';
     return;
   }
 
   elements.attendanceList.innerHTML = filtered
-    .map(
-      (student) => `
+    .map((student) => {
+      const status = state.attendance[student] || "Masuk";
+      const initials = getInitials(student);
+      return `
         <label class="student-row">
-          <span class="student-name">${student}</span>
-          <select data-student="${student}" aria-label="Status ${student}">
-            ${STATUS_OPTIONS.map(
-              (status) =>
-                `<option value="${status}" ${state.attendance[student] === status ? "selected" : ""}>${status}</option>`
-            ).join("")}
-          </select>
+          <div class="student-avatar-name">
+            <span class="student-avatar" aria-hidden="true">${initials}</span>
+            <span class="student-name">${escapeHtml(student)}</span>
+          </div>
+          <div class="status-select-wrap">
+            <select data-student="${student}" data-status="${status}" aria-label="Status kehadiran ${student}">
+              ${STATUS_OPTIONS.map(
+                (opt) => `<option value="${opt}" ${status === opt ? "selected" : ""}>${opt}</option>`
+              ).join("")}
+            </select>
+          </div>
         </label>
-      `
-    )
+      `;
+    })
     .join("");
 }
 
@@ -524,11 +628,11 @@ function renderNotes() {
 }
 
 function escapeHtml(text) {
-  return text
+  return String(text || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
@@ -604,7 +708,6 @@ function generateDailyInfo(mode = currentPreviewMode) {
   const piketTitle = isTomorrow ? "🧹 PIKET BESOK" : "🧹 PIKET HARI INI";
   message += `${formatSection(piketTitle, piket.length ? piket : ["Belum ada piket."])}\n\n`;
 
-  // Absensi HANYA ditampilkan di mode 'today' (saat info hari ini)
   if (!isTomorrow) {
     const absent = STUDENTS.filter((student) => (state.attendance[student] || "Masuk") !== "Masuk");
     if (absent.length) {
@@ -616,7 +719,7 @@ function generateDailyInfo(mode = currentPreviewMode) {
   }
 
   const closing = isTomorrow ? "Semangat buat besok guys! 😸" : "Semangat guys! 😸";
-  message += `🗒️ CATATAN\n╰┈➤ ${note}\n\n૮ ˶ᵔ ᵕ ᵔ˶ ა\n${closing}\n\n୨୧ ───────────────── ୨୧`;
+  message += `🗒️ CATATAN\n╰┈➤ ${note}\n\n૮ ˶ᵔ ᵕ ᵔ˶ ა\n${closing}\nhttps://science2hub.vercel.app\n\n୨୧ ───────────────── ୨୧`;
 
   return message;
 }
@@ -624,7 +727,9 @@ function generateDailyInfo(mode = currentPreviewMode) {
 function renderPreview() {
   if (elements.previewTabs) {
     elements.previewTabs.querySelectorAll(".tab-btn").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.mode === currentPreviewMode);
+      const isActive = btn.dataset.mode === currentPreviewMode;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-selected", isActive ? "true" : "false");
     });
   }
 
@@ -635,63 +740,107 @@ function renderPreview() {
   elements.whatsappBtn.href = `https://wa.me/?text=${whatsappText}`;
 }
 
+// ============================================================
+// DRAWERS (SLIDING PANELS)
+// ============================================================
+function openDrawer(drawerElement) {
+  if (!drawerElement) return;
+  drawerElement.classList.add("is-open");
+  drawerElement.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function closeDrawer(drawerElement) {
+  if (!drawerElement) return;
+  drawerElement.classList.remove("is-open");
+  drawerElement.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
 function openTaskModal(task = null) {
   editingTaskId = task ? task.id : null;
-  elements.taskModalTitle.textContent = task ? "Edit tugas" : "Tambah tugas";
+  elements.taskModalTitle.textContent = task ? "Edit Tugas" : "Tambah Tugas";
   elements.taskSubject.value = task ? task.subject : "";
   elements.taskDescription.value = task ? task.description : "";
   elements.taskDeadline.value = task ? deadlineToInput(task.deadline) : "";
-  elements.taskModal.classList.remove("hidden");
-  elements.taskModal.setAttribute("aria-hidden", "false");
+  openDrawer(elements.taskModal);
 }
 
 function closeTaskModal() {
   editingTaskId = null;
   elements.taskForm.reset();
-  elements.taskModal.classList.add("hidden");
-  elements.taskModal.setAttribute("aria-hidden", "true");
+  closeDrawer(elements.taskModal);
+}
+
+function renderScheduleDrawerBody() {
+  const daysToShow = currentScheduleTab === "all" ? WEEKDAYS : [currentScheduleTab];
+  elements.scheduleModalBody.innerHTML = daysToShow
+    .map(
+      (day) => `
+        <div class="setting-row" data-day-section="${day}">
+          <div class="setting-row-header">
+            <span class="setting-day-title">Jadwal ${DAY_LABELS_ID[day] || day}</span>
+          </div>
+          <textarea data-day="${day}" rows="4" placeholder="Contoh:\nB.ING\nIPA\nBTQ Kelas 9">${escapeHtml(
+            (state.schedule[day] || []).join("\n")
+          )}</textarea>
+        </div>
+      `
+    )
+    .join("");
 }
 
 function openScheduleModal() {
-  const entries = WEEKDAYS.map(
-    (day) => `
-      <label class="setting-row">
-        <span>${capitalizeFirst(day)}</span>
-          <textarea data-day="${day}" rows="4">${escapeHtml((state.schedule[day] || []).join("\n"))}</textarea>
-      </label>
-    `
-  ).join("");
-
-  elements.scheduleModalBody.innerHTML = entries;
-  elements.scheduleModal.classList.remove("hidden");
-  elements.scheduleModal.setAttribute("aria-hidden", "false");
+  currentScheduleTab = "all";
+  if (elements.scheduleDayTabs) {
+    elements.scheduleDayTabs.querySelectorAll(".drawer-day-tab").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.day === "all");
+    });
+  }
+  renderScheduleDrawerBody();
+  openDrawer(elements.scheduleModal);
 }
 
 function closeScheduleModal() {
-  elements.scheduleModal.classList.add("hidden");
-  elements.scheduleModal.setAttribute("aria-hidden", "true");
+  closeDrawer(elements.scheduleModal);
+}
+
+function renderPiketDrawerBody() {
+  const daysToShow = currentPiketTab === "all" ? WEEKDAYS : [currentPiketTab];
+  elements.piketModalBody.innerHTML = daysToShow
+    .map(
+      (day) => `
+        <div class="setting-row" data-day-section="${day}">
+          <div class="setting-row-header">
+            <span class="setting-day-title">Piket ${DAY_LABELS_ID[day] || day}</span>
+          </div>
+          <textarea data-day="${day}" rows="4" placeholder="Contoh:\nNAMA SISWA 1\nNAMA SISWA 2">${escapeHtml(
+            (state.piket[day] || []).join("\n")
+          )}</textarea>
+        </div>
+      `
+    )
+    .join("");
 }
 
 function openPiketModal() {
-  const entries = WEEKDAYS.map(
-    (day) => `
-      <label class="setting-row">
-        <span>${capitalizeFirst(day)}</span>
-          <textarea data-day="${day}" rows="4">${escapeHtml((state.piket[day] || []).join("\n"))}</textarea>
-      </label>
-    `
-  ).join("");
-
-  elements.piketModalBody.innerHTML = entries;
-  elements.piketModal.classList.remove("hidden");
-  elements.piketModal.setAttribute("aria-hidden", "false");
+  currentPiketTab = "all";
+  if (elements.piketDayTabs) {
+    elements.piketDayTabs.querySelectorAll(".drawer-day-tab").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.day === "all");
+    });
+  }
+  renderPiketDrawerBody();
+  openDrawer(elements.piketModal);
 }
 
 function closePiketModal() {
-  elements.piketModal.classList.add("hidden");
-  elements.piketModal.setAttribute("aria-hidden", "true");
+  closeDrawer(elements.piketModal);
 }
 
+// ============================================================
+// FORM ACTIONS & SAVING
+// ============================================================
 async function handleTaskSubmit(event) {
   event.preventDefault();
   const subject = elements.taskSubject.value.trim();
@@ -702,19 +851,18 @@ async function handleTaskSubmit(event) {
 
   try {
     if (editingTaskId) {
-      // Update di Supabase
       await updateTask(editingTaskId, { subject, description, deadline });
       state.tasks = state.tasks.map((task) =>
         task.id === editingTaskId ? { ...task, subject, description, deadline } : task
       );
+      showToast("Tugas berhasil diperbarui!");
     } else {
-      // Insert ke Supabase
       const newTask = await insertTask({ subject, description, deadline });
       state.tasks.push(newTask);
+      showToast("Tugas baru berhasil ditambahkan!");
     }
   } catch (err) {
     console.error("Gagal simpan tugas ke Supabase:", err);
-    // Fallback: simpan lokal saja
     if (editingTaskId) {
       state.tasks = state.tasks.map((task) =>
         task.id === editingTaskId ? { ...task, subject, description, deadline } : task
@@ -722,6 +870,7 @@ async function handleTaskSubmit(event) {
     } else {
       state.tasks.push({ id: crypto.randomUUID(), subject, description, deadline });
     }
+    showToast("Tugas disimpan di perangkat lokal.");
   }
 
   saveState();
@@ -731,8 +880,6 @@ async function handleTaskSubmit(event) {
 
 async function saveScheduleSettings() {
   const textareas = elements.scheduleModalBody.querySelectorAll("textarea");
-  const nextSchedule = {};
-
   textareas.forEach((textarea) => {
     const day = textarea.dataset.day;
     if (!WEEKDAYS.includes(day)) return;
@@ -740,18 +887,17 @@ async function saveScheduleSettings() {
       .split(/\n|,/)
       .map((item) => item.trim())
       .filter(Boolean);
-    nextSchedule[day] = value.length ? value : ["Belum ada jadwal"];
+    state.schedule[day] = value.length ? value : ["Belum ada jadwal"];
   });
 
-  state.schedule = normalizeWeekdays(nextSchedule);
+  state.schedule = normalizeWeekdays(state.schedule);
 
-  // Simpan ke Supabase
   try {
-    await Promise.all(
-      WEEKDAYS.map((day) => saveSchedule(day, state.schedule[day]))
-    );
+    await Promise.all(WEEKDAYS.map((day) => saveSchedule(day, state.schedule[day])));
+    showToast("Jadwal pelajaran berhasil disimpan!");
   } catch (err) {
     console.error("Gagal simpan jadwal ke Supabase:", err);
+    showToast("Jadwal tersimpan di penyimpanan lokal.");
   }
 
   saveState();
@@ -761,8 +907,6 @@ async function saveScheduleSettings() {
 
 async function savePiketSettings() {
   const textareas = elements.piketModalBody.querySelectorAll("textarea");
-  const nextPiket = {};
-
   textareas.forEach((textarea) => {
     const day = textarea.dataset.day;
     if (!WEEKDAYS.includes(day)) return;
@@ -770,18 +914,17 @@ async function savePiketSettings() {
       .split(/\n|,/)
       .map((item) => item.trim())
       .filter(Boolean);
-    nextPiket[day] = value.length ? value : ["Belum ada piket"];
+    state.piket[day] = value.length ? value : ["Belum ada piket"];
   });
 
-  state.piket = normalizeWeekdays(nextPiket);
+  state.piket = normalizeWeekdays(state.piket);
 
-  // Simpan ke Supabase
   try {
-    await Promise.all(
-      WEEKDAYS.map((day) => savePiket(day, state.piket[day]))
-    );
+    await Promise.all(WEEKDAYS.map((day) => savePiket(day, state.piket[day])));
+    showToast("Jadwal piket berhasil disimpan!");
   } catch (err) {
     console.error("Gagal simpan piket ke Supabase:", err);
+    showToast("Piket tersimpan di penyimpanan lokal.");
   }
 
   saveState();
@@ -790,13 +933,17 @@ async function savePiketSettings() {
 }
 
 async function resetAttendance() {
+  const confirmReset = confirm("Apakah Anda yakin ingin mereset seluruh status absensi menjadi 'Masuk'?");
+  if (!confirmReset) return;
+
   state.attendance = Object.fromEntries(STUDENTS.map((student) => [student, "Masuk"]));
 
-  // Sync ke Supabase
   try {
     await upsertAllAttendance(todayDateStr, state.attendance);
+    showToast("Absensi berhasil direset ke 'Masuk'!");
   } catch (err) {
     console.error("Gagal reset absensi ke Supabase:", err);
+    showToast("Absensi direset secara lokal.");
   }
 
   saveState();
@@ -806,16 +953,12 @@ async function resetAttendance() {
 function copyDailyInfo() {
   const text = generateDailyInfo();
   navigator.clipboard.writeText(text).then(() => {
-    elements.copyBtn.textContent = "Tersalin";
-    setTimeout(() => {
-      elements.copyBtn.textContent = "Salin";
-    }, 1400);
+    showToast("Daily Class Info berhasil disalin ke clipboard!");
   });
 }
 
 async function shareDailyInfo() {
   const text = generateDailyInfo();
-
   if (navigator.share) {
     try {
       await navigator.share({
@@ -829,10 +972,7 @@ async function shareDailyInfo() {
   }
 
   await navigator.clipboard.writeText(text);
-  elements.shareBtn.textContent = "Tersalin";
-  setTimeout(() => {
-    elements.shareBtn.textContent = "Bagikan";
-  }, 1400);
+  showToast("Teks berhasil disalin untuk dibagikan!");
 }
 
 function renderAll() {
@@ -843,6 +983,9 @@ function renderAll() {
   renderPreview();
 }
 
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
 document.addEventListener("click", async (event) => {
   const target = event.target.closest("button, a");
   if (!target) return;
@@ -862,8 +1005,12 @@ document.addEventListener("click", async (event) => {
 
   if (action === "delete-task") {
     const id = target.dataset.id;
+    const confirmDelete = confirm("Hapus tugas ini?");
+    if (!confirmDelete) return;
+
     try {
       await deleteTask(id);
+      showToast("Tugas berhasil dihapus.");
     } catch (err) {
       console.error("Gagal hapus tugas dari Supabase:", err);
     }
@@ -882,14 +1029,40 @@ document.addEventListener("click", async (event) => {
   }
 });
 
+// Sliding day switcher in Schedule Drawer
+if (elements.scheduleDayTabs) {
+  elements.scheduleDayTabs.addEventListener("click", (event) => {
+    const btn = event.target.closest(".drawer-day-tab");
+    if (!btn || !btn.dataset.day) return;
+    currentScheduleTab = btn.dataset.day;
+    elements.scheduleDayTabs.querySelectorAll(".drawer-day-tab").forEach((b) => {
+      b.classList.toggle("active", b === btn);
+    });
+    renderScheduleDrawerBody();
+  });
+}
+
+// Sliding day switcher in Piket Drawer
+if (elements.piketDayTabs) {
+  elements.piketDayTabs.addEventListener("click", (event) => {
+    const btn = event.target.closest(".drawer-day-tab");
+    if (!btn || !btn.dataset.day) return;
+    currentPiketTab = btn.dataset.day;
+    elements.piketDayTabs.querySelectorAll(".drawer-day-tab").forEach((b) => {
+      b.classList.toggle("active", b === btn);
+    });
+    renderPiketDrawerBody();
+  });
+}
+
 document.addEventListener("change", async (event) => {
   const student = event.target.dataset.student;
   if (!student) return;
 
   const newStatus = event.target.value;
   state.attendance[student] = newStatus;
+  event.target.dataset.status = newStatus;
 
-  // Sync ke Supabase
   try {
     await upsertAttendance(todayDateStr, student, newStatus);
   } catch (err) {
@@ -897,6 +1070,7 @@ document.addEventListener("change", async (event) => {
   }
 
   saveState();
+  renderAttendance();
   renderPreview();
 });
 
@@ -907,20 +1081,21 @@ document.addEventListener("input", (event) => {
     saveState();
     renderPreview();
 
-    // Debounce simpan ke Supabase (tiap 1.5 detik setelah berhenti ngetik)
+    elements.notesStatusIndicator.textContent = "Menyimpan...";
     clearTimeout(notesDebounceTimer);
     notesDebounceTimer = setTimeout(async () => {
       try {
         await saveNotes(state.notes, notesId);
         if (!notesId) {
-          // Ambil id yang baru dibuat
           const row = await fetchNotes();
           if (row) notesId = row.id;
         }
+        elements.notesStatusIndicator.textContent = "Tersimpan";
       } catch (err) {
         console.error("Gagal simpan catatan ke Supabase:", err);
+        elements.notesStatusIndicator.textContent = "Lokal";
       }
-    }, 1500);
+    }, 1200);
   }
 
   if (event.target === elements.attendanceSearch) {
@@ -928,9 +1103,18 @@ document.addEventListener("input", (event) => {
   }
 });
 
+if (elements.clearSearchBtn) {
+  elements.clearSearchBtn.addEventListener("click", () => {
+    elements.attendanceSearch.value = "";
+    renderAttendance();
+    elements.attendanceSearch.focus();
+  });
+}
+
 elements.generateBtn.addEventListener("click", () => {
   renderPreview();
   elements.dailyInfoPreview.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  showToast("Pratinjau Daily Info berhasil diperbarui!");
 });
 
 if (elements.previewTabs) {
@@ -946,26 +1130,16 @@ if (elements.copyAttendanceOnlyBtn) {
   elements.copyAttendanceOnlyBtn.addEventListener("click", async () => {
     const text = generateAttendanceReportText();
     await navigator.clipboard.writeText(text);
-    const originalText = elements.copyAttendanceOnlyBtn.textContent;
-    elements.copyAttendanceOnlyBtn.textContent = "Tersalin! ✅";
-    setTimeout(() => {
-      elements.copyAttendanceOnlyBtn.textContent = originalText;
-    }, 1500);
+    showToast("Rekap absensi berhasil disalin ke clipboard!");
   });
 }
 
 elements.addTaskBtn.addEventListener("click", () => openTaskModal());
-
 elements.copyBtn.addEventListener("click", copyDailyInfo);
-
 elements.shareBtn.addEventListener("click", shareDailyInfo);
-
 elements.taskForm.addEventListener("submit", handleTaskSubmit);
-
 elements.openScheduleModalBtn.addEventListener("click", openScheduleModal);
-
 elements.openPiketModalBtn.addEventListener("click", openPiketModal);
-
 document.querySelector("#saveScheduleBtn").addEventListener("click", saveScheduleSettings);
 document.querySelector("#savePiketBtn").addEventListener("click", savePiketSettings);
 elements.resetAttendanceBtn.addEventListener("click", resetAttendance);
@@ -977,39 +1151,50 @@ window.addEventListener("click", (event) => {
   if (event.target === elements.loginModal) closeLoginModal();
 });
 
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeTaskModal();
+    closeScheduleModal();
+    closePiketModal();
+    closeLoginModal();
+  }
+});
+
 // ============================================================
 // AUTH UI
 // ============================================================
-
 function openLoginModal() {
-  elements.loginModal.classList.remove("hidden");
-  elements.loginModal.setAttribute("aria-hidden", "false");
+  openDrawer(elements.loginModal);
   elements.loginError.classList.add("hidden");
   elements.loginError.textContent = "";
   elements.loginForm.reset();
 }
 
 function closeLoginModal() {
-  elements.loginModal.classList.add("hidden");
-  elements.loginModal.setAttribute("aria-hidden", "true");
+  closeDrawer(elements.loginModal);
 }
 
 function updateAuthUI(session) {
-  const loggedIn = !!session;
+  isSekretarisLoggedIn = !!session;
 
-  elements.loginBtn.classList.toggle("hidden", loggedIn);
-  elements.logoutBtn.classList.toggle("hidden", !loggedIn);
-  elements.adminBadge.classList.toggle("hidden", !loggedIn);
-  if (loggedIn) {
+  elements.loginBtn.classList.toggle("hidden", isSekretarisLoggedIn);
+  elements.logoutBtn.classList.toggle("hidden", !isSekretarisLoggedIn);
+  elements.adminBadge.classList.toggle("hidden", !isSekretarisLoggedIn);
+
+  if (isSekretarisLoggedIn) {
     const displayName = session.user.email ? session.user.email.split("@")[0] : "Sekretaris";
-    elements.adminBadge.textContent = `✏️ ${displayName}`;
+    elements.adminBadgeText.textContent = displayName;
   }
 
-  // Sembunyikan tombol edit jika belum login
+  // Tampilkan tombol jika login sebagai sekretaris, sembunyikan jika bukan
   const editBtns = document.querySelectorAll(
-    "#openScheduleModalBtn, #openPiketModalBtn, #addTaskBtn, #resetAttendanceBtn"
+    "#openScheduleModalBtn, #openPiketModalBtn, #addTaskBtn, #resetAttendanceBtn, .admin-only"
   );
-  editBtns.forEach((btn) => btn.classList.toggle("hidden", !loggedIn));
+  editBtns.forEach((btn) => {
+    btn.classList.toggle("hidden", !isSekretarisLoggedIn);
+  });
+
+  renderTasks();
 }
 
 elements.loginBtn.addEventListener("click", openLoginModal);
@@ -1017,6 +1202,7 @@ elements.loginBtn.addEventListener("click", openLoginModal);
 elements.logoutBtn.addEventListener("click", async () => {
   try {
     await signOut();
+    showToast("Anda telah keluar dari Mode Sekretaris.");
   } catch (err) {
     console.error("Gagal logout:", err);
   }
@@ -1028,16 +1214,16 @@ elements.loginForm.addEventListener("submit", async (event) => {
   const password = elements.loginPassword.value;
   const submitBtn = elements.loginSubmitBtn;
 
-  // Format otomatis: jika input berupa username biasa (tanpa @), tambahkan domain default
   const email = rawInput.includes("@") ? rawInput : `${rawInput}@sekretaris.local`;
 
   submitBtn.disabled = true;
-  submitBtn.textContent = "Masuk...";
+  submitBtn.textContent = "Memverifikasi...";
   elements.loginError.classList.add("hidden");
 
   try {
     await signIn(email, password);
     closeLoginModal();
+    showToast("Berhasil masuk sebagai Sekretaris!");
   } catch (err) {
     console.error("Login gagal:", err);
     let msg = "Username atau password salah.";
@@ -1058,18 +1244,15 @@ elements.loginForm.addEventListener("submit", async (event) => {
   }
 });
 
-// Listen perubahan auth state dari Supabase
 onAuthChange((session) => {
   updateAuthUI(session);
 });
 
 // ============================================================
-// LOAD DATA DARI SUPABASE SAAT INIT
+// LOAD DATA DARI SUPABASE
 // ============================================================
-
 async function loadFromSupabase() {
   try {
-    // Load schedule
     const schedule = await fetchSchedule();
     if (Object.keys(schedule).length) {
       state.schedule = normalizeWeekdays({ ...state.schedule, ...schedule });
@@ -1079,7 +1262,6 @@ async function loadFromSupabase() {
   }
 
   try {
-    // Load piket
     const piket = await fetchPiket();
     if (Object.keys(piket).length) {
       state.piket = normalizeWeekdays({ ...state.piket, ...piket });
@@ -1089,7 +1271,6 @@ async function loadFromSupabase() {
   }
 
   try {
-    // Load tasks
     const tasks = await fetchTasks();
     if (Array.isArray(tasks)) {
       state.tasks = tasks;
@@ -1099,7 +1280,6 @@ async function loadFromSupabase() {
   }
 
   try {
-    // Load notes
     const notesRow = await fetchNotes();
     if (notesRow) {
       notesId = notesRow.id;
@@ -1110,7 +1290,6 @@ async function loadFromSupabase() {
   }
 
   try {
-    // Load attendance hari ini
     const attendance = await fetchAttendance(todayDateStr);
     if (Object.keys(attendance).length) {
       state.attendance = { ...state.attendance, ...attendance };
@@ -1126,12 +1305,10 @@ async function loadFromSupabase() {
 // ============================================================
 // INIT
 // ============================================================
-
-// Cek session awal
 getSession().then((session) => {
   updateAuthUI(session);
 });
 
 initGridPulse();
-renderAll(); // Render dulu dari localStorage
-loadFromSupabase(); // Lalu load dari Supabase (akan re-render)
+renderAll();
+loadFromSupabase();

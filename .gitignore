@@ -3,3 +3,6 @@ env.js
 
 # Dependencies
 node_modules/
+
+# Local agent workspace
+.hermes/
