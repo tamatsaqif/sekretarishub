@@ -5,12 +5,13 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./env.js";
 import {
   fetchStudents,
   fetchKasWeeks,
+  getCurrentWeek,
   fetchPaymentsByStudent,
   insertPayment,
-  insertExpense,
+  getStudentPaymentStatus,
   isBendahara,
   getKasSummary,
-  getStudentPaymentStatus,
+  getTotalOutstanding,
 } from "./kas.js";
 
 const { createClient } = window.supabase;
@@ -18,6 +19,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let students = [];
 let weeks = [];
+let currentWeek = null;
 let isBendaharaUser = false;
 let currentDetailStudentId = null;
 
@@ -31,32 +33,32 @@ const elements = {
   loginPassword: document.querySelector("#loginPassword"),
   loginError: document.querySelector("#loginError"),
   loginSubmitBtn: document.querySelector("#loginSubmitBtn"),
+  currentWeekBadge: document.querySelector("#currentWeekBadge"),
   balanceAmount: document.querySelector("#balanceAmount"),
-  totalIncome: document.querySelector("#totalIncome"),
-  totalExpense: document.querySelector("#totalExpense"),
+  totalOutstanding: document.querySelector("#totalOutstanding"),
+  totalStudents: document.querySelector("#totalStudents"),
   studentSearch: document.querySelector("#studentSearch"),
+  clearSearchBtn: document.querySelector("#clearSearchBtn"),
   studentsContainer: document.querySelector("#studentsContainer"),
   addPaymentBtn: document.querySelector("#addPaymentBtn"),
-  addExpenseBtn: document.querySelector("#addExpenseBtn"),
-  paymentModal: document.querySelector("#paymentModal"),
+  studentDetailDrawer: document.querySelector("#studentDetailDrawer"),
+  studentDetailTitle: document.querySelector("#studentDetailTitle"),
+  detailCurrentWeek: document.querySelector("#detailCurrentWeek"),
+  weekStatusBadge: document.querySelector("#weekStatusBadge"),
+  weekDateRange: document.querySelector("#weekDateRange"),
+  detailTotalDue: document.querySelector("#detailTotalDue"),
+  detailTotalPaid: document.querySelector("#detailTotalPaid"),
+  detailShortage: document.querySelector("#detailShortage"),
+  paymentActions: document.querySelector("#paymentActions"),
+  quickPayBtn: document.querySelector("#quickPayBtn"),
+  paymentHistoryList: document.querySelector("#paymentHistoryList"),
+  paymentDrawer: document.querySelector("#paymentDrawer"),
   paymentForm: document.querySelector("#paymentForm"),
   paymentStudent: document.querySelector("#paymentStudent"),
   paymentWeek: document.querySelector("#paymentWeek"),
   paymentAmount: document.querySelector("#paymentAmount"),
   paymentError: document.querySelector("#paymentError"),
   paymentSubmitBtn: document.querySelector("#paymentSubmitBtn"),
-  expenseModal: document.querySelector("#expenseModal"),
-  expenseForm: document.querySelector("#expenseForm"),
-  expenseAmount: document.querySelector("#expenseAmount"),
-  expenseDescription: document.querySelector("#expenseDescription"),
-  expenseDate: document.querySelector("#expenseDate"),
-  expenseError: document.querySelector("#expenseError"),
-  expenseSubmitBtn: document.querySelector("#expenseSubmitBtn"),
-  studentDetailModal: document.querySelector("#studentDetailModal"),
-  studentDetailName: document.querySelector("#studentDetailName"),
-  detailTotalPaid: document.querySelector("#detailTotalPaid"),
-  detailShortage: document.querySelector("#detailShortage"),
-  paymentHistory: document.querySelector("#paymentHistory"),
 };
 
 // ============================================================
@@ -167,17 +169,29 @@ function initGridPulse() {
 // ============================================================
 // AUTH UI
 // ============================================================
+function openModal(modalElement) {
+  modalElement.classList.remove("hidden");
+  modalElement.classList.add("is-open");
+  modalElement.setAttribute("aria-hidden", "false");
+}
+
+function closeModal(modalElement) {
+  modalElement.classList.remove("is-open");
+  setTimeout(() => {
+    modalElement.classList.add("hidden");
+    modalElement.setAttribute("aria-hidden", "true");
+  }, 300);
+}
+
 function openLoginModal() {
-  elements.loginModal.classList.remove("hidden");
-  elements.loginModal.setAttribute("aria-hidden", "false");
+  openModal(elements.loginModal);
   elements.loginError.classList.add("hidden");
   elements.loginError.textContent = "";
   elements.loginForm.reset();
 }
 
 function closeLoginModal() {
-  elements.loginModal.classList.add("hidden");
-  elements.loginModal.setAttribute("aria-hidden", "true");
+  closeModal(elements.loginModal);
 }
 
 async function updateAuthUI(session) {
@@ -187,10 +201,6 @@ async function updateAuthUI(session) {
   elements.adminBadge.classList.toggle("hidden", !loggedIn);
   
   if (loggedIn) {
-    const displayName = session.user.email ? session.user.email.split("@")[0] : "User";
-    elements.adminBadge.textContent = `✏️ ${displayName}`;
-    
-    // Check role
     try {
       isBendaharaUser = await isBendahara();
     } catch (err) {
@@ -203,7 +213,6 @@ async function updateAuthUI(session) {
 
   // Show/hide bendahara-only buttons
   elements.addPaymentBtn.classList.toggle("hidden", !isBendaharaUser);
-  elements.addExpenseBtn.classList.toggle("hidden", !isBendaharaUser);
 }
 
 elements.loginBtn.addEventListener("click", openLoginModal);
@@ -211,8 +220,10 @@ elements.loginBtn.addEventListener("click", openLoginModal);
 elements.logoutBtn.addEventListener("click", async () => {
   try {
     await db.auth.signOut();
+    showToast("Berhasil keluar");
   } catch (err) {
     console.error("Gagal logout:", err);
+    showToast("Gagal keluar");
   }
 });
 
@@ -231,6 +242,7 @@ elements.loginForm.addEventListener("submit", async (event) => {
   try {
     await db.auth.signInWithPassword({ email, password });
     closeLoginModal();
+    showToast("Berhasil masuk");
   } catch (err) {
     console.error("Login gagal:", err);
     let msg = "Username atau password salah.";
@@ -253,6 +265,9 @@ elements.loginForm.addEventListener("submit", async (event) => {
 
 db.auth.onAuthStateChange(async (_event, session) => {
   await updateAuthUI(session);
+  if (session) {
+    await loadData();
+  }
 });
 
 db.auth.getSession().then(async ({ data }) => {
@@ -260,7 +275,7 @@ db.auth.getSession().then(async ({ data }) => {
 });
 
 // ============================================================
-// LOAD DATA
+// CURRENCY FORMATTING
 // ============================================================
 function formatCurrency(amount) {
   return new Intl.NumberFormat("id-ID", {
@@ -270,17 +285,44 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
+function formatDateRange(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+  return `${start.getDate()}–${end.getDate()} ${monthNames[start.getMonth()]}`;
+}
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+async function loadData() {
+  await Promise.all([
+    loadSummary(),
+    loadStudents(),
+  ]);
+}
+
 async function loadSummary() {
   try {
+    // Load current week
+    currentWeek = await getCurrentWeek();
+    if (currentWeek) {
+      const dateRange = formatDateRange(currentWeek.start_date, currentWeek.end_date);
+      elements.currentWeekBadge.textContent = `Minggu ke-${currentWeek.week_number} · ${dateRange}`;
+    } else {
+      elements.currentWeekBadge.textContent = "Tidak ada minggu aktif";
+    }
+
+    // Load summary
     const summary = await getKasSummary();
+    const outstanding = await getTotalOutstanding();
+
     elements.balanceAmount.textContent = formatCurrency(summary.balance);
-    elements.totalIncome.textContent = formatCurrency(summary.totalIncome);
-    elements.totalExpense.textContent = formatCurrency(summary.totalExpense);
+    elements.totalOutstanding.textContent = formatCurrency(outstanding);
   } catch (err) {
     console.error("Gagal load summary:", err);
     elements.balanceAmount.textContent = "—";
-    elements.totalIncome.textContent = "—";
-    elements.totalExpense.textContent = "—";
+    elements.totalOutstanding.textContent = "—";
   }
 }
 
@@ -288,7 +330,9 @@ async function loadStudents() {
   try {
     students = await fetchStudents();
     weeks = await fetchKasWeeks();
-    renderStudents();
+    elements.totalStudents.textContent = students.length;
+    
+    await renderStudents();
     populatePaymentForm();
   } catch (err) {
     console.error("Gagal load siswa:", err);
@@ -296,7 +340,7 @@ async function loadStudents() {
   }
 }
 
-function renderStudents() {
+async function renderStudents() {
   const query = elements.studentSearch.value.trim().toLowerCase();
   const filtered = students.filter((s) => s.name.toLowerCase().includes(query));
 
@@ -305,12 +349,52 @@ function renderStudents() {
     return;
   }
 
-  elements.studentsContainer.innerHTML = filtered
+  // Show/hide clear button
+  elements.clearSearchBtn.classList.toggle("hidden", !query);
+
+  // Calculate each student's status for current week
+  const today = new Date();
+  const passedWeeks = weeks.filter((w) => new Date(w.start_date) <= today);
+
+  const studentCards = await Promise.all(
+    filtered.map(async (student) => {
+      // Get current week payment status
+      let weekStatus = "Belum Bayar";
+      let weekStatusClass = "";
+      if (currentWeek) {
+        const payment = await getStudentPaymentStatus(student.id, currentWeek.id);
+        if (payment) {
+          weekStatus = "Sudah Bayar";
+          weekStatusClass = "paid";
+        }
+      }
+
+      // Calculate outstanding
+      const payments = await fetchPaymentsByStudent(student.id);
+      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+      const totalDue = passedWeeks.reduce((sum, w) => sum + w.amount, 0);
+      const shortage = totalDue - totalPaid;
+
+      return {
+        student,
+        weekStatus,
+        weekStatusClass,
+        shortage,
+      };
+    })
+  );
+
+  elements.studentsContainer.innerHTML = studentCards
     .map(
-      (student) => `
-        <div class="student-row" style="cursor: pointer;" data-student-id="${student.id}">
-          <span class="student-name">${escapeHtml(student.name)}</span>
-          <span style="font-size: 0.85rem; color: var(--muted);">Lihat detail →</span>
+      ({ student, weekStatus, weekStatusClass, shortage }) => `
+        <div class="student-card" data-student-id="${student.id}">
+          <div class="student-card-header">
+            <span class="student-card-name">${escapeHtml(student.name)}</span>
+            <span class="student-card-week-status ${weekStatusClass}">${weekStatus}</span>
+          </div>
+          <div class="student-card-meta">
+            <span class="student-card-meta-item">Tunggakan: <strong>${shortage > 0 ? formatCurrency(shortage) : "Lunas"}</strong></span>
+          </div>
         </div>
       `
     )
@@ -319,40 +403,77 @@ function renderStudents() {
 
 elements.studentSearch.addEventListener("input", renderStudents);
 
+elements.clearSearchBtn.addEventListener("click", () => {
+  elements.studentSearch.value = "";
+  elements.clearSearchBtn.classList.add("hidden");
+  renderStudents();
+});
+
 elements.studentsContainer.addEventListener("click", async (event) => {
-  const row = event.target.closest(".student-row");
-  if (!row) return;
-  const studentId = row.dataset.studentId;
+  const card = event.target.closest(".student-card");
+  if (!card) return;
+  const studentId = card.dataset.studentId;
   await openStudentDetail(studentId);
 });
 
 // ============================================================
-// STUDENT DETAIL MODAL
+// STUDENT DETAIL DRAWER
 // ============================================================
 async function openStudentDetail(studentId) {
   const student = students.find((s) => s.id === studentId);
   if (!student) return;
 
   currentDetailStudentId = studentId;
-  elements.studentDetailName.textContent = student.name;
-  elements.studentDetailModal.classList.remove("hidden");
-  elements.studentDetailModal.setAttribute("aria-hidden", "false");
-  elements.paymentHistory.innerHTML = '<div class="empty-state">Memuat riwayat...</div>';
+  elements.studentDetailTitle.textContent = student.name;
+  openModal(elements.studentDetailDrawer);
+
+  // Show loading
+  elements.weekStatusBadge.textContent = "Memuat...";
+  elements.weekDateRange.textContent = "";
+  elements.detailTotalDue.textContent = "—";
+  elements.detailTotalPaid.textContent = "—";
+  elements.detailShortage.textContent = "—";
+  elements.paymentHistoryList.innerHTML = '<div class="empty-state" style="padding: 16px;">Memuat riwayat...</div>';
 
   try {
+    // Current week status
+    if (currentWeek) {
+      const payment = await getStudentPaymentStatus(studentId, currentWeek.id);
+      const isPaid = !!payment;
+      
+      elements.weekStatusBadge.textContent = isPaid ? "✓ Sudah Bayar Minggu Ini" : "○ Belum Bayar Minggu Ini";
+      elements.weekStatusBadge.className = `week-status-badge ${isPaid ? "paid" : ""}`;
+      
+      const dateRange = formatDateRange(currentWeek.start_date, currentWeek.end_date);
+      elements.weekDateRange.textContent = `Minggu ke-${currentWeek.week_number} · ${dateRange} · ${formatCurrency(currentWeek.amount)}`;
+
+      // Show quick pay button if bendahara and not paid
+      if (isBendaharaUser && !isPaid) {
+        elements.paymentActions.classList.remove("hidden");
+        elements.quickPayBtn.onclick = () => quickPay(studentId, currentWeek.id, currentWeek.amount);
+      } else {
+        elements.paymentActions.classList.add("hidden");
+      }
+    } else {
+      elements.weekStatusBadge.textContent = "Tidak ada minggu aktif";
+      elements.weekDateRange.textContent = "";
+      elements.paymentActions.classList.add("hidden");
+    }
+
+    // Calculate summary
     const payments = await fetchPaymentsByStudent(studentId);
     const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
     
-    // Hitung total yang harus dibayar (semua minggu yang sudah lewat)
     const today = new Date();
     const passedWeeks = weeks.filter((w) => new Date(w.start_date) <= today);
     const totalDue = passedWeeks.reduce((sum, w) => sum + w.amount, 0);
     const shortage = totalDue - totalPaid;
 
+    elements.detailTotalDue.textContent = formatCurrency(totalDue);
     elements.detailTotalPaid.textContent = formatCurrency(totalPaid);
     elements.detailShortage.textContent = shortage > 0 ? formatCurrency(shortage) : "Lunas ✓";
 
-    // Render payment history by month
+    // Render payment history
     const paymentsByWeek = new Map(payments.map((p) => [p.week.id, p]));
     const monthGroups = new Map();
 
@@ -366,26 +487,23 @@ async function openStudentDetail(studentId) {
     let historyHtml = "";
     for (const [month, monthWeeks] of monthGroups) {
       historyHtml += `<div style="margin-bottom: 20px;">`;
-      historyHtml += `<h4 style="margin: 0 0 12px; font-size: 1.05rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${escapeHtml(month)}</h4>`;
+      historyHtml += `<h4 style="margin: 0 0 12px; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);">${escapeHtml(month)}</h4>`;
       
-      monthWeeks.sort((a, b) => new Date(a.start_date) - new Date(b.start_date)).forEach((week) => {
+      monthWeeks.sort((a, b) => new Date(b.start_date) - new Date(a.start_date)).forEach((week) => {
         const payment = paymentsByWeek.get(week.id);
         const isPaid = !!payment;
-        const icon = isPaid ? "✓" : "○";
-        const status = isPaid ? "Dibayar" : "Belum bayar";
-        const color = isPaid ? "var(--ink)" : "var(--muted)";
+        const statusClass = isPaid ? "paid" : "";
+        const statusText = isPaid ? "✓ Dibayar" : "○ Belum Bayar";
         
-        const startDate = new Date(week.start_date);
-        const endDate = new Date(week.end_date);
-        const dateRange = `${startDate.getDate()}–${endDate.getDate()} ${startDate.toLocaleDateString("id-ID", { month: "short" })}`;
+        const dateRange = formatDateRange(week.start_date, week.end_date);
 
         historyHtml += `
-          <div style="display: flex; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.7); margin-bottom: 8px; color: ${color};">
-            <div>
-              <span style="font-weight: 600;">${icon} Minggu ${week.week_number}</span>
-              <span style="color: var(--muted); font-size: 0.85rem; margin-left: 8px;">· ${dateRange}</span>
+          <div class="payment-history-item">
+            <div class="payment-history-week">
+              <span class="payment-history-week-label">Minggu ${week.week_number}</span>
+              <span class="payment-history-week-date">${dateRange} · ${formatCurrency(week.amount)}</span>
             </div>
-            <span style="font-weight: 600;">${status}</span>
+            <span class="payment-history-status ${statusClass}">${statusText}</span>
           </div>
         `;
       });
@@ -393,21 +511,20 @@ async function openStudentDetail(studentId) {
       historyHtml += `</div>`;
     }
 
-    elements.paymentHistory.innerHTML = historyHtml || '<div class="empty-state">Belum ada riwayat pembayaran.</div>';
+    elements.paymentHistoryList.innerHTML = historyHtml || '<div class="empty-state" style="padding: 16px;">Belum ada riwayat pembayaran.</div>';
   } catch (err) {
     console.error("Gagal load detail siswa:", err);
-    elements.paymentHistory.innerHTML = '<div class="empty-state">Gagal memuat riwayat.</div>';
+    elements.paymentHistoryList.innerHTML = '<div class="empty-state" style="padding: 16px;">Gagal memuat riwayat.</div>';
   }
 }
 
-function closeStudentDetailModal() {
-  elements.studentDetailModal.classList.add("hidden");
-  elements.studentDetailModal.setAttribute("aria-hidden", "true");
+function closeStudentDetailDrawer() {
+  closeModal(elements.studentDetailDrawer);
   currentDetailStudentId = null;
 }
 
 // ============================================================
-// PAYMENT MODAL (BENDAHARA)
+// PAYMENT DRAWER (BENDAHARA)
 // ============================================================
 function populatePaymentForm() {
   // Populate students dropdown
@@ -419,24 +536,20 @@ function populatePaymentForm() {
     weeks
       .sort((a, b) => new Date(b.start_date) - new Date(a.start_date))
       .map((w) => {
-        const startDate = new Date(w.start_date);
-        const endDate = new Date(w.end_date);
-        const dateRange = `${startDate.getDate()}–${endDate.getDate()} ${startDate.toLocaleDateString("id-ID", { month: "short" })}`;
+        const dateRange = formatDateRange(w.start_date, w.end_date);
         return `<option value="${w.id}" data-amount="${w.amount}">${escapeHtml(w.month)} · Minggu ${w.week_number} (${dateRange}) · ${formatCurrency(w.amount)}</option>`;
       }).join("");
 }
 
 elements.addPaymentBtn.addEventListener("click", () => {
   if (!isBendaharaUser) return;
-  elements.paymentModal.classList.remove("hidden");
-  elements.paymentModal.setAttribute("aria-hidden", "false");
+  openModal(elements.paymentDrawer);
   elements.paymentForm.reset();
   elements.paymentError.classList.add("hidden");
 });
 
-function closePaymentModal() {
-  elements.paymentModal.classList.add("hidden");
-  elements.paymentModal.setAttribute("aria-hidden", "true");
+function closePaymentDrawer() {
+  closeModal(elements.paymentDrawer);
 }
 
 elements.paymentWeek.addEventListener("change", () => {
@@ -449,6 +562,37 @@ elements.paymentWeek.addEventListener("change", () => {
   }
 });
 
+async function quickPay(studentId, weekId, amount) {
+  if (!isBendaharaUser) return;
+
+  const confirmPay = confirm("Catat pembayaran untuk minggu ini?");
+  if (!confirmPay) return;
+
+  try {
+    const { data: session } = await db.auth.getSession();
+    const recordedBy = session?.session?.user?.email || "unknown";
+
+    await insertPayment({
+      student_id: studentId,
+      week_id: weekId,
+      amount,
+      recorded_by: recordedBy,
+    });
+
+    showToast("Pembayaran berhasil dicatat");
+    await loadSummary();
+    await renderStudents();
+    
+    // Refresh student detail
+    if (currentDetailStudentId) {
+      await openStudentDetail(currentDetailStudentId);
+    }
+  } catch (err) {
+    console.error("Gagal simpan pembayaran:", err);
+    showToast("Gagal menyimpan pembayaran");
+  }
+}
+
 elements.paymentForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!isBendaharaUser) return;
@@ -460,7 +604,7 @@ elements.paymentForm.addEventListener("submit", async (event) => {
   if (!studentId || !weekId || !amount) return;
 
   elements.paymentSubmitBtn.disabled = true;
-  elements.paymentSubmitBtn.textContent = "Menyimpan...";
+  elements.paymentSubmitBtn.querySelector("span").textContent = "Menyimpan...";
   elements.paymentError.classList.add("hidden");
 
   try {
@@ -482,8 +626,10 @@ elements.paymentForm.addEventListener("submit", async (event) => {
       recorded_by: recordedBy,
     });
 
-    closePaymentModal();
+    closePaymentDrawer();
+    showToast("Pembayaran berhasil dicatat");
     await loadSummary();
+    await renderStudents();
     
     // Refresh student detail if open
     if (currentDetailStudentId) {
@@ -495,61 +641,7 @@ elements.paymentForm.addEventListener("submit", async (event) => {
     elements.paymentError.classList.remove("hidden");
   } finally {
     elements.paymentSubmitBtn.disabled = false;
-    elements.paymentSubmitBtn.textContent = "Tandai Sudah Bayar";
-  }
-});
-
-// ============================================================
-// EXPENSE MODAL (BENDAHARA)
-// ============================================================
-elements.addExpenseBtn.addEventListener("click", () => {
-  if (!isBendaharaUser) return;
-  elements.expenseModal.classList.remove("hidden");
-  elements.expenseModal.setAttribute("aria-hidden", "false");
-  elements.expenseForm.reset();
-  elements.expenseDate.valueAsDate = new Date();
-  elements.expenseError.classList.add("hidden");
-});
-
-function closeExpenseModal() {
-  elements.expenseModal.classList.add("hidden");
-  elements.expenseModal.setAttribute("aria-hidden", "true");
-}
-
-elements.expenseForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  if (!isBendaharaUser) return;
-
-  const amount = parseInt(elements.expenseAmount.value, 10);
-  const description = elements.expenseDescription.value.trim();
-  const expenseDate = elements.expenseDate.value;
-
-  if (!amount || !description || !expenseDate) return;
-
-  elements.expenseSubmitBtn.disabled = true;
-  elements.expenseSubmitBtn.textContent = "Menyimpan...";
-  elements.expenseError.classList.add("hidden");
-
-  try {
-    const { data: session } = await db.auth.getSession();
-    const recordedBy = session?.session?.user?.email || "unknown";
-
-    await insertExpense({
-      amount,
-      description,
-      expense_date: expenseDate,
-      recorded_by: recordedBy,
-    });
-
-    closeExpenseModal();
-    await loadSummary();
-  } catch (err) {
-    console.error("Gagal simpan pengeluaran:", err);
-    elements.expenseError.textContent = err.message || "Gagal menyimpan pengeluaran.";
-    elements.expenseError.classList.remove("hidden");
-  } finally {
-    elements.expenseSubmitBtn.disabled = false;
-    elements.expenseSubmitBtn.textContent = "Simpan Pengeluaran";
+    elements.paymentSubmitBtn.querySelector("span").textContent = "Simpan";
   }
 });
 
@@ -560,17 +652,36 @@ document.addEventListener("click", (event) => {
   const target = event.target.closest("button");
   if (!target) return;
   if (target.dataset.closeModal === "loginModal") closeLoginModal();
-  if (target.dataset.closeModal === "studentDetailModal") closeStudentDetailModal();
-  if (target.dataset.closeModal === "paymentModal") closePaymentModal();
-  if (target.dataset.closeModal === "expenseModal") closeExpenseModal();
+  if (target.dataset.closeModal === "studentDetailDrawer") closeStudentDetailDrawer();
+  if (target.dataset.closeModal === "paymentDrawer") closePaymentDrawer();
 });
 
 window.addEventListener("click", (event) => {
   if (event.target === elements.loginModal) closeLoginModal();
-  if (event.target === elements.studentDetailModal) closeStudentDetailModal();
-  if (event.target === elements.paymentModal) closePaymentModal();
-  if (event.target === elements.expenseModal) closeExpenseModal();
+  if (event.target === elements.studentDetailDrawer) closeStudentDetailDrawer();
+  if (event.target === elements.paymentDrawer) closePaymentDrawer();
 });
+
+// ============================================================
+// TOAST NOTIFICATIONS
+// ============================================================
+function showToast(message, duration = 3000) {
+  const container = document.querySelector("#toastContainer");
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = `
+    <svg class="icon-svg toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span>${escapeHtml(message)}</span>
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("toast-exit");
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
 
 // ============================================================
 // UTILS
@@ -588,5 +699,4 @@ function escapeHtml(text) {
 // INIT
 // ============================================================
 initGridPulse();
-loadSummary();
-loadStudents();
+loadData();

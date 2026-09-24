@@ -11,209 +11,311 @@
   </head>
   <body>
     <canvas id="gridPulseCanvas" aria-hidden="true"></canvas>
+
     <div class="app-shell">
+      <!-- TOPBAR -->
       <header class="topbar">
         <div class="brand-block">
-          <p class="brand-kicker">9 SCP 2</p>
+          <div class="brand-kicker-row">
+            <span class="brand-badge">9 SCP 2</span>
+          </div>
           <h1>Kas Kelas</h1>
         </div>
+
         <div class="topbar-actions">
-          <a href="/home" class="ghost-btn" style="text-decoration: none;">← Dashboard</a>
-          <button id="loginBtn" class="secret-login-btn" type="button" title="Login" aria-label="Login">•••</button>
-          <button id="logoutBtn" class="ghost-btn hidden" type="button">Keluar</button>
-          <span id="adminBadge" class="admin-badge hidden">✏️ User</span>
+          <a href="/" class="ghost-btn" style="text-decoration: none;">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Dashboard</span>
+          </a>
+
+          <button id="loginBtn" class="secret-login-btn" type="button" title="Mode Bendahara (Login)" aria-label="Login bendahara">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="1.5"></circle>
+              <circle cx="19" cy="12" r="1.5"></circle>
+              <circle cx="5" cy="12" r="1.5"></circle>
+            </svg>
+          </button>
+
+          <span id="adminBadge" class="admin-badge hidden">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span id="adminBadgeText">Bendahara</span>
+          </span>
+
+          <button id="logoutBtn" class="ghost-btn hidden" type="button" aria-label="Keluar dari akun">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Keluar</span>
+          </button>
         </div>
       </header>
 
+      <!-- MAIN LAYOUT -->
       <main class="layout" style="gap: 24px;">
-        <!-- Summary Cards -->
+        <!-- SUMMARY PANEL -->
         <section class="panel" style="grid-column: 1 / -1;">
-          <div class="panel-label">Ringkasan Kas</div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 14px;">
-            <div style="padding: 14px; background: rgba(226, 226, 224, 0.35); border-radius: 12px; border: 1px solid var(--line);">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <svg style="width: 18px; height: 18px; stroke: var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <div class="panel-header-row">
+            <div class="panel-tag">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>Ringkasan Kas</span>
+            </div>
+            <div id="currentWeekBadge" class="hero-chip">Memuat...</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+            <div class="summary-card">
+              <div class="summary-label">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+                <span>Saldo Kas</span>
+              </div>
+              <div id="balanceAmount" class="summary-value">—</div>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-label">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <circle cx="12" cy="12" r="10"></circle>
                   <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
                   <path d="M12 18V6"></path>
                 </svg>
-                <div style="font-size: 0.8rem; color: var(--muted); font-weight: 600;">SALDO KAS</div>
+                <span>Total Tunggakan</span>
               </div>
-              <div id="balanceAmount" style="font-weight: 700; font-size: 1.5rem; color: var(--ink);">—</div>
+              <div id="totalOutstanding" class="summary-value outstanding">—</div>
             </div>
-            <div style="padding: 14px; background: rgba(226, 226, 224, 0.35); border-radius: 12px; border: 1px solid var(--line);">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <svg style="width: 18px; height: 18px; stroke: var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="12" y1="1" x2="12" y2="23"></line>
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+
+            <div class="summary-card">
+              <div class="summary-label">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                <div style="font-size: 0.8rem; color: var(--muted); font-weight: 600;">TOTAL PEMASUKAN</div>
+                <span>Total Siswa</span>
               </div>
-              <div id="totalIncome" style="font-weight: 700; font-size: 1.5rem; color: var(--ink);">—</div>
-            </div>
-            <div style="padding: 14px; background: rgba(226, 226, 224, 0.35); border-radius: 12px; border: 1px solid var(--line);">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <svg style="width: 18px; height: 18px; stroke: var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-                <div style="font-size: 0.8rem; color: var(--muted); font-weight: 600;">TOTAL PENGELUARAN</div>
-              </div>
-              <div id="totalExpense" style="font-weight: 700; font-size: 1.5rem; color: var(--ink);">—</div>
+              <div id="totalStudents" class="summary-value">33</div>
             </div>
           </div>
         </section>
 
-        <!-- Student Payments List -->
+        <!-- STUDENTS LIST -->
         <section class="panel" style="grid-column: 1 / -1;">
           <div class="section-head">
-            <h3 style="display: flex; align-items: center; gap: 8px;">
-              <svg style="width: 22px; height: 22px; stroke: currentColor;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
-                <path d="M12 18V6"></path>
-              </svg>
-              <span>Pembayaran Siswa</span>
-            </h3>
+            <div class="section-title">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <h3>Daftar Siswa</h3>
+            </div>
+
             <div class="head-actions">
-              <button id="addPaymentBtn" class="primary-btn hidden" type="button">+ Catat Bayar</button>
-              <button id="addExpenseBtn" class="ghost-btn hidden" type="button">+ Pengeluaran</button>
+              <button id="addPaymentBtn" class="primary-btn hidden" type="button">
+                <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Catat Bayar</span>
+              </button>
             </div>
           </div>
 
           <label class="search-box" for="studentSearch">
-            <span>🔎</span>
-            <input id="studentSearch" type="search" placeholder="Cari nama siswa" />
+            <svg class="icon-svg search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input id="studentSearch" type="search" placeholder="Cari nama siswa..." aria-label="Cari siswa" />
+            <button id="clearSearchBtn" class="search-clear-btn hidden" type="button" aria-label="Hapus pencarian">×</button>
           </label>
 
-          <div id="studentsContainer" style="display: grid; gap: 10px; margin-top: 12px;">
-            <div class="empty-state">Memuat data...</div>
+          <div id="studentsContainer" class="students-grid">
+            <div class="empty-state">Memuat data siswa...</div>
           </div>
         </section>
       </main>
     </div>
 
-    <!-- Student Detail Modal -->
-    <div id="studentDetailModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card wide">
-        <div class="modal-head">
-          <h3 id="studentDetailName">Detail Siswa</h3>
-          <button type="button" class="close-btn" data-close-modal="studentDetailModal">×</button>
+    <!-- ============================================================
+         DRAWERS & MODALS
+         ============================================================ -->
+
+    <!-- 1. DRAWER: STUDENT DETAIL (Read-only for all) -->
+    <div id="studentDetailDrawer" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="studentDetailTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Kas Kelas</span>
+            <h3 id="studentDetailTitle">Detail Siswa</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" data-close-modal="studentDetailDrawer" aria-label="Tutup detail siswa">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
-        <div style="display: grid; gap: 16px; margin-bottom: 16px;">
-          <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(226, 226, 224, 0.35); border-radius: 10px;">
-            <span style="font-weight: 600;">Total Dibayar</span>
-            <span id="detailTotalPaid" style="font-weight: 700; font-size: 1.1rem;">—</span>
+        <div class="drawer-body">
+          <!-- Current Week Status -->
+          <div id="detailCurrentWeek" class="current-week-card">
+            <div class="week-status-badge" id="weekStatusBadge">Memuat...</div>
+            <div id="weekDateRange" class="week-date-range"></div>
           </div>
-          <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(226, 226, 224, 0.35); border-radius: 10px;">
-            <span style="font-weight: 600;">Kekurangan</span>
-            <span id="detailShortage" style="font-weight: 700; font-size: 1.1rem; color: var(--danger);">—</span>
-          </div>
-        </div>
 
-        <div class="modal-body" id="paymentHistory">
-          <div class="empty-state">Memuat riwayat...</div>
+          <!-- Summary -->
+          <div class="detail-summary-grid">
+            <div class="detail-summary-item">
+              <span class="detail-summary-label">Total Wajib</span>
+              <span id="detailTotalDue" class="detail-summary-value">—</span>
+            </div>
+            <div class="detail-summary-item">
+              <span class="detail-summary-label">Sudah Dibayar</span>
+              <span id="detailTotalPaid" class="detail-summary-value">—</span>
+            </div>
+            <div class="detail-summary-item">
+              <span class="detail-summary-label">Tunggakan</span>
+              <span id="detailShortage" class="detail-summary-value shortage">—</span>
+            </div>
+          </div>
+
+          <!-- Payment Actions (Bendahara only) -->
+          <div id="paymentActions" class="hidden" style="margin-top: 16px;">
+            <button id="quickPayBtn" class="primary-btn action-btn-scale" type="button" style="width: 100%;">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Catat Pembayaran Minggu Ini</span>
+            </button>
+          </div>
+
+          <!-- Payment History -->
+          <div style="margin-top: 24px;">
+            <h4 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 12px;">Riwayat Pembayaran</h4>
+            <div id="paymentHistoryList" class="payment-history-list">
+              <div class="empty-state" style="padding: 16px;">Memuat riwayat...</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Add Payment Modal (Bendahara only) -->
-    <div id="paymentModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card">
-        <div class="modal-head">
-          <h3>Catat Pembayaran</h3>
-          <button type="button" class="close-btn" data-close-modal="paymentModal">×</button>
+    <!-- 2. DRAWER: CATAT PEMBAYARAN (Bendahara only) -->
+    <div id="paymentDrawer" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="paymentDrawerTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Kas Kelas</span>
+            <h3 id="paymentDrawerTitle">Catat Pembayaran</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" data-close-modal="paymentDrawer" aria-label="Tutup form pembayaran">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
-        <form id="paymentForm">
-          <div class="field-group">
-            <label for="paymentStudent">Pilih Siswa</label>
-            <select id="paymentStudent" required style="border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: rgba(255, 255, 255, 0.9); font-size: 0.95rem; width: 100%;">
-              <option value="">— Pilih siswa —</option>
-            </select>
+        <form id="paymentForm" class="drawer-form">
+          <div class="drawer-body form-body">
+            <div class="field-group">
+              <label for="paymentStudent">Siswa</label>
+              <select id="paymentStudent" required>
+                <option value="">— Pilih siswa —</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="paymentWeek">Periode</label>
+              <select id="paymentWeek" required>
+                <option value="">— Pilih minggu —</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="paymentAmount">Nominal</label>
+              <input id="paymentAmount" type="number" placeholder="5000" required />
+            </div>
+
+            <p id="paymentError" class="form-error hidden" role="alert"></p>
           </div>
 
-          <div class="field-group">
-            <label for="paymentWeek">Minggu Pembayaran</label>
-            <select id="paymentWeek" required style="border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: rgba(255, 255, 255, 0.9); font-size: 0.95rem; width: 100%;">
-              <option value="">— Pilih minggu —</option>
-            </select>
-          </div>
-
-          <div class="field-group">
-            <label for="paymentAmount">Nominal</label>
-            <input id="paymentAmount" type="number" placeholder="5000" required style="border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: rgba(255, 255, 255, 0.9); font-size: 0.95rem; width: 100%;" />
-          </div>
-
-          <p id="paymentError" class="form-error hidden"></p>
-
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" data-close-modal="paymentModal">Batal</button>
-            <button type="submit" class="primary-btn" id="paymentSubmitBtn">Tandai Sudah Bayar</button>
+          <div class="drawer-footer">
+            <button type="button" class="secondary-btn" data-close-modal="paymentDrawer">Batal</button>
+            <button type="submit" class="primary-btn" id="paymentSubmitBtn">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Simpan</span>
+            </button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Add Expense Modal (Bendahara only) -->
-    <div id="expenseModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card">
-        <div class="modal-head">
-          <h3>Catat Pengeluaran</h3>
-          <button type="button" class="close-btn" data-close-modal="expenseModal">×</button>
+    <!-- 3. MODAL: LOGIN (Bendahara) -->
+    <div id="loginModal" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel auth-drawer" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Autentikasi</span>
+            <h3 id="loginTitle">Mode Bendahara</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" data-close-modal="loginModal" aria-label="Tutup form login">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
-        <form id="expenseForm">
-          <div class="field-group">
-            <label for="expenseAmount">Nominal</label>
-            <input id="expenseAmount" type="number" placeholder="50000" required style="border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: rgba(255, 255, 255, 0.9); font-size: 0.95rem; width: 100%;" />
+        <form id="loginForm" class="drawer-form">
+          <div class="drawer-body form-body">
+            <p class="auth-helper-text">Masuk sebagai pengurus kelas untuk mencatat pembayaran dan pengeluaran kas.</p>
+
+            <div class="field-group">
+              <label for="loginUsername">Username / Email</label>
+              <input id="loginUsername" name="username" type="text" placeholder="Masukkan username" required autocomplete="username" />
+            </div>
+
+            <div class="field-group">
+              <label for="loginPassword">Kata Sandi</label>
+              <input id="loginPassword" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+            </div>
+
+            <p id="loginError" class="form-error hidden" role="alert"></p>
           </div>
 
-          <div class="field-group">
-            <label for="expenseDescription">Keterangan</label>
-            <input id="expenseDescription" type="text" placeholder="Beli dekorasi kelas" required style="border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: rgba(255, 255, 255, 0.9); font-size: 0.95rem; width: 100%;" />
-          </div>
-
-          <div class="field-group">
-            <label for="expenseDate">Tanggal</label>
-            <input id="expenseDate" type="date" required style="border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: rgba(255, 255, 255, 0.9); font-size: 0.95rem; width: 100%;" />
-          </div>
-
-          <p id="expenseError" class="form-error hidden"></p>
-
-          <div class="modal-actions">
-            <button type="button" class="secondary-btn" data-close-modal="expenseModal">Batal</button>
-            <button type="submit" class="primary-btn" id="expenseSubmitBtn">Simpan Pengeluaran</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card">
-        <div class="modal-head">
-          <h3>Login</h3>
-          <button type="button" class="close-btn" data-close-modal="loginModal">×</button>
-        </div>
-        <form id="loginForm">
-          <div class="field-group">
-            <label for="loginUsername">Username</label>
-            <input id="loginUsername" name="username" type="text" placeholder="Masukkan username" required autocomplete="username" />
-          </div>
-          <div class="field-group">
-            <label for="loginPassword">Password</label>
-            <input id="loginPassword" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
-          </div>
-          <p id="loginError" class="form-error hidden">Username atau password salah.</p>
-          <div class="modal-actions">
+          <div class="drawer-footer">
             <button type="button" class="secondary-btn" data-close-modal="loginModal">Batal</button>
-            <button type="submit" class="primary-btn" id="loginSubmitBtn">Masuk</button>
+            <button type="submit" class="primary-btn" id="loginSubmitBtn">
+              <span>Masuk</span>
+            </button>
           </div>
         </form>
       </div>
     </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
     <script type="module" src="kas-app.js"></script>
   </body>

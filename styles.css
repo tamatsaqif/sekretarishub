@@ -1382,6 +1382,247 @@ h3 {
   display: none !important;
 }
 
+/* ============================================================
+   KAS KELAS STYLES
+   ============================================================ */
+
+.summary-card {
+  padding: 14px;
+  background: rgba(226, 226, 224, 0.35);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.summary-value {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+
+.summary-value.outstanding {
+  color: #b91c1c;
+}
+
+.students-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.student-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.student-card:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.student-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-card-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.student-card-week-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.student-card-week-status.paid {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.student-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.student-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Current Week Card */
+.current-week-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.1), rgba(16, 185, 129, 0.05));
+  border: 1px solid rgba(13, 148, 136, 0.3);
+  border-radius: var(--radius-lg);
+}
+
+.week-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.week-status-badge.paid {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.week-date-range {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Detail Summary Grid */
+.detail-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.detail-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: rgba(226, 226, 224, 0.35);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.detail-summary-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail-summary-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.detail-summary-value.shortage {
+  color: #b91c1c;
+}
+
+/* Payment History List */
+.payment-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.payment-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.payment-history-week {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.payment-history-week-label {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.payment-history-week-date {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.payment-history-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.payment-history-status.paid {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+/* Auth drawer */
+.auth-drawer {
+  width: min(420px, 94vw);
+}
+
+/* Mobile: 1-column detail summary */
+@media (max-width: 480px) {
+  .detail-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

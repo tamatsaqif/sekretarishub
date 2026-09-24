@@ -132,7 +132,7 @@
 
     <script type="module">
       import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./env.js";
-      import { getKasSummary, fetchStudents } from "./kas.js";
+      import { getKasSummary, fetchStudents, getTotalOutstanding } from "./kas.js";
 
       const { createClient } = window.supabase;
       const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -364,8 +364,17 @@
           console.warn("Gagal load siswa:", err);
         }
 
-        // TODO: Hitung siswa yang belum lunas
-        elements.unpaidCount.textContent = "—";
+        try {
+          const outstanding = await getTotalOutstanding();
+          elements.unpaidCount.textContent = new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            minimumFractionDigits: 0,
+          }).format(outstanding);
+        } catch (err) {
+          console.warn("Gagal load tunggakan:", err);
+          elements.unpaidCount.textContent = "—";
+        }
       }
 
       initGridPulse();

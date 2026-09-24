@@ -197,6 +197,35 @@ async function getKasSummary() {
   return { totalIncome, totalExpense, balance };
 }
 
+async function getTotalOutstanding() {
+  // Get all students
+  const { data: students, error: studentsError } = await db
+    .from("students")
+    .select("id");
+  if (studentsError) throw studentsError;
+
+  // Get all weeks that have passed
+  const today = new Date().toISOString().split("T")[0];
+  const { data: weeks, error: weeksError } = await db
+    .from("kas_weeks")
+    .select("id, amount")
+    .lte("start_date", today);
+  if (weeksError) throw weeksError;
+
+  // Calculate total that should have been paid
+  const totalDue = students.length * weeks.reduce((sum, w) => sum + w.amount, 0);
+
+  // Get total actually paid
+  const { data: payments, error: paymentsError } = await db
+    .from("kas_payments")
+    .select("amount");
+  if (paymentsError) throw paymentsError;
+  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+
+  // Outstanding = what should have been paid - what was actually paid
+  return totalDue - totalPaid;
+}
+
 export {
   db,
   fetchStudents,
@@ -214,4 +243,5 @@ export {
   deleteExpense,
   isBendahara,
   getKasSummary,
+  getTotalOutstanding,
 };
