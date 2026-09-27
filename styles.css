@@ -1787,6 +1787,12 @@ h3 {
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+}
+
+.payment-history-item:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .payment-history-week {
@@ -1826,6 +1832,81 @@ h3 {
   background: #ecfdf5;
   color: #047857;
   border-color: #a7f3d0;
+}
+
+/* Checklist Toggle Button */
+.checklist-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1.5px solid var(--line);
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.checklist-toggle-btn:hover {
+  border-color: var(--line-strong);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.checklist-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.checklist-toggle-btn.checked {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.1);
+}
+
+.checklist-toggle-btn .empty-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+}
+
+.quick-action-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex: 1;
+}
+
+.quick-action-pill:hover {
+  background: #ffffff;
+  border-color: var(--line-strong);
+}
+
+.quick-action-pill.primary {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+}
+
+.quick-action-pill.primary:hover {
+  background: #0d9488;
 }
 
 /* Auth drawer */

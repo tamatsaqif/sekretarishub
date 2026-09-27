@@ -432,6 +432,23 @@ async function getTotalOutstanding() {
   return outstanding;
 }
 
+async function toggleWeekPayment(studentId, weekId, amount = 5000) {
+  const existing = await getStudentPaymentStatus(studentId, weekId);
+  if (existing) {
+    await deletePayment(existing.id);
+    return { paid: false, payment: null };
+  } else {
+    const paymentData = {
+      student_id: studentId,
+      week_id: weekId,
+      amount: amount || 5000,
+      recorded_by: "bendahara"
+    };
+    await insertPayment(paymentData);
+    return { paid: true, payment: paymentData };
+  }
+}
+
 export {
   db,
   fetchStudents,
@@ -443,6 +460,7 @@ export {
   insertPayment,
   updatePayment,
   deletePayment,
+  toggleWeekPayment,
   getStudentPaymentStatus,
   fetchExpenses,
   insertExpense,

@@ -219,18 +219,24 @@
           </div>
 
           <!-- Payment Actions (Bendahara only) -->
-          <div id="paymentActions" class="hidden" style="margin-top: 16px;">
-            <button id="quickPayBtn" class="primary-btn action-btn-scale" type="button" style="width: 100%;">
-              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <div id="paymentActions" class="hidden" style="margin-top: 14px; display: flex; gap: 8px;">
+            <button id="quickPayBtn" class="quick-action-pill primary" type="button">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Catat Pembayaran Minggu Ini</span>
+              <span>Bayar Minggu Ini</span>
+            </button>
+            <button id="payAllPassedBtn" class="quick-action-pill" type="button">
+              <span>Lunas s/d Mgg Ini</span>
             </button>
           </div>
 
-          <!-- Payment History -->
-          <div style="margin-top: 24px;">
-            <h4 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 12px;">Riwayat Pembayaran</h4>
+          <!-- Payment History with Checklist -->
+          <div style="margin-top: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0;">Checklist Iuran Mingguan</h4>
+              <span id="checklistHint" style="font-size: 0.72rem; color: var(--muted);">Ketuk tombol untuk ubah status</span>
+            </div>
             <div id="paymentHistoryList" class="payment-history-list">
               <div class="empty-state" style="padding: 16px;">Memuat riwayat...</div>
             </div>
