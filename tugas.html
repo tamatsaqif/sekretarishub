@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Tugas & PR — 9 SCP 2</title>
+    <meta name="description" content="Daftar tugas, pekerjaan rumah, dan deadline kelas 9 SCP 2." />
+    <meta name="theme-color" content="#F8F8F8" />
+    <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  </head>
+  <body>
+    <canvas id="gridPulseCanvas" aria-hidden="true"></canvas>
+
+    <!-- UNIFIED HEADER -->
+    <header id="siteHeader" class="site-header"></header>
+
+    <div class="app-shell">
+      <!-- PAGE HEADER -->
+      <section class="page-header">
+        <div class="page-header-top">
+          <div class="page-tag">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Tugas & PR</span>
+          </div>
+          <span id="activeTasksCountBadge" class="text-secondary" style="font-size: 0.875rem; font-weight: 500;">0 Tugas Aktif</span>
+        </div>
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h1>Daftar Tugas & Deadline</h1>
+            <p class="page-description">Pantau tugas yang belum dikumpulkan, tandai tugas selesai, dan periksa batas waktu.</p>
+          </div>
+          <button id="addTaskModalBtn" class="btn-primary admin-only hidden" type="button">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Tambah Tugas</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- CONTROLS & FILTER BAR -->
+      <section style="margin-bottom: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Filter Tabs: Belum Dikumpulkan, Sudah Dikumpulkan, Deadline -->
+          <div class="filter-pills" id="taskFilterPills" role="tablist">
+            <button type="button" class="filter-pill active" data-filter="pending">
+              Belum Dikumpulkan <span id="countPending" class="pill-count">0</span>
+            </button>
+            <button type="button" class="filter-pill" data-filter="completed">
+              Sudah Dikumpulkan <span id="countCompleted" class="pill-count">0</span>
+            </button>
+            <button type="button" class="filter-pill" data-filter="deadline">
+              Urut Deadline
+            </button>
+            <button type="button" class="filter-pill" data-filter="all">
+              Semua <span id="countAll" class="pill-count">0</span>
+            </button>
+          </div>
+
+          <!-- Search Box -->
+          <div class="search-box">
+            <svg class="icon-svg mini search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input id="taskSearchInput" type="search" placeholder="Cari mapel atau deskripsi tugas..." aria-label="Cari tugas" />
+            <button id="clearTaskSearchBtn" class="search-clear-btn hidden" type="button">×</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TASKS LIST CONTAINER -->
+      <section>
+        <div id="tasksContainer" class="stack-list">
+          <div class="loading-state">Memuat data tugas...</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- TASK MODAL DRAWER (Tambah/Edit) -->
+    <div id="taskModalDrawer" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Formulir</span>
+            <h3 id="taskModalTitle">Tambah Tugas</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" id="closeTaskModalBtn" aria-label="Tutup formulir">×</button>
+        </div>
+        <form id="taskModalForm" class="drawer-form">
+          <div class="drawer-body">
+            <div class="field-group">
+              <label for="taskSubjectInput">Mata Pelajaran</label>
+              <input id="taskSubjectInput" type="text" placeholder="Contoh: Matematika, IPA, B. Indonesia" required />
+            </div>
+
+            <div class="field-group">
+              <label for="taskDescInput">Deskripsi / Rincian Tugas</label>
+              <textarea id="taskDescInput" rows="3" placeholder="Contoh: Mengerjakan LKS hal 45 nomor 1–10 di buku catatan..." required></textarea>
+            </div>
+
+            <div class="field-group">
+              <label for="taskDeadlineInput">Batas Pengumpulan (Deadline)</label>
+              <input id="taskDeadlineInput" type="date" required />
+            </div>
+          </div>
+          <div class="drawer-footer">
+            <button type="button" class="btn-secondary" id="cancelTaskModalBtn">Batal</button>
+            <button type="submit" class="btn-primary" id="saveTaskSubmitBtn">Simpan Tugas</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <script type="module">
+      import {
+        formatDeadline,
+        deadlineToInput,
+        getDeadlineUrgency,
+        escapeHtml,
+        showToast,
+        initGridPulse,
+        setupNavigation
+      } from "./shared.js";
+      import { fetchTasks, insertTask, updateTask, deleteTask } from "./supabase.js";
+
+      initGridPulse();
+      setupNavigation("tugas");
+
+      const TASKS_STORAGE_KEY = "sekretaris9scp2-tasks-list";
+      const COMPLETED_STORAGE_KEY = "sekretaris9scp2-completed-tasks";
+      let completedTaskIds = new Set(JSON.parse(localStorage.getItem(COMPLETED_STORAGE_KEY) || "[]"));
+
+      let tasks = JSON.parse(localStorage.getItem(TASKS_STORAGE_KEY) || "[]");
+      let currentFilter = "pending"; // pending | completed | deadline | all
+      let editingTaskId = null;
+
+      const tasksContainer = document.querySelector("#tasksContainer");
+      const activeTasksCountBadge = document.querySelector("#activeTasksCountBadge");
+      const countPending = document.querySelector("#countPending");
+      const countCompleted = document.querySelector("#countCompleted");
+      const countAll = document.querySelector("#countAll");
+      const taskFilterPills = document.querySelector("#taskFilterPills");
+      const taskSearchInput = document.querySelector("#taskSearchInput");
+      const clearTaskSearchBtn = document.querySelector("#clearTaskSearchBtn");
+
+      const addTaskModalBtn = document.querySelector("#addTaskModalBtn");
+      const taskModalDrawer = document.querySelector("#taskModalDrawer");
+      const taskModalTitle = document.querySelector("#taskModalTitle");
+      const taskModalForm = document.querySelector("#taskModalForm");
+      const taskSubjectInput = document.querySelector("#taskSubjectInput");
+      const taskDescInput = document.querySelector("#taskDescInput");
+      const taskDeadlineInput = document.querySelector("#taskDeadlineInput");
+      const closeTaskModalBtn = document.querySelector("#closeTaskModalBtn");
+      const cancelTaskModalBtn = document.querySelector("#cancelTaskModalBtn");
+
+      function saveLocalTasks() {
+        localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+      }
+
+      function saveCompletedIds() {
+        localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify([...completedTaskIds]));
+      }
+
+      function renderTasks() {
+        const query = taskSearchInput.value.trim().toLowerCase();
+        clearTaskSearchBtn.classList.toggle("hidden", query.length === 0);
+
+        const pendingList = tasks.filter((t) => !completedTaskIds.has(t.id));
+        const completedList = tasks.filter((t) => completedTaskIds.has(t.id));
+
+        countPending.textContent = pendingList.length;
+        countCompleted.textContent = completedList.length;
+        countAll.textContent = tasks.length;
+        activeTasksCountBadge.textContent = `${pendingList.length} Tugas Aktif`;
+
+        let listToRender = [...tasks];
+
+        if (currentFilter === "pending") {
+          listToRender = pendingList;
+        } else if (currentFilter === "completed") {
+          listToRender = completedList;
+        } else if (currentFilter === "deadline") {
+          listToRender = [...pendingList].sort((a, b) => {
+            const dateA = new Date(deadlineToInput(a.deadline) || "9999-12-31");
+            const dateB = new Date(deadlineToInput(b.deadline) || "9999-12-31");
+            return dateA - dateB;
+          });
+        }
+
+        if (query) {
+          listToRender = listToRender.filter(
+            (t) => t.subject.toLowerCase().includes(query) || t.description.toLowerCase().includes(query)
+          );
+        }
+
+        if (!listToRender.length) {
+          tasksContainer.innerHTML = `
+            <div class="empty-state">
+              <p>Tidak ada tugas dalam kategori ini.</p>
+            </div>
+          `;
+          return;
+        }
+
+        tasksContainer.innerHTML = listToRender
+          .map((task) => {
+            const isDone = completedTaskIds.has(task.id);
+            const urgency = getDeadlineUrgency(task.deadline);
+            return `
+              <article class="task-card ${isDone ? "completed" : ""}" data-task-id="${task.id}">
+                <div class="task-header">
+                  <div>
+                    <span class="task-subject-badge">${escapeHtml(task.subject)}</span>
+                    <h3 class="task-title">${escapeHtml(task.description)}</h3>
+                  </div>
+                  <button type="button" class="checklist-toggle-btn ${isDone ? "checked" : ""}" data-action="toggle-complete" data-id="${task.id}" title="Tandai selesai">
+                    ${isDone ? "✓ Selesai" : "Belum"}
+                  </button>
+                </div>
+                <div class="task-footer">
+                  <span class="deadline-tag ${urgency.urgentClass}">
+                    <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Deadline: ${escapeHtml(urgency.label)}
+                  </span>
+                  <div class="task-actions admin-only hidden" style="display: flex; gap: 6px;">
+                    <button class="btn-ghost btn-sm" type="button" data-action="edit" data-id="${task.id}">Edit</button>
+                    <button class="btn-ghost btn-sm" type="button" data-action="delete" data-id="${task.id}">Hapus</button>
+                  </div>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      // Filter clicks
+      taskFilterPills.addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-pill");
+        if (!btn) return;
+        taskFilterPills.querySelectorAll(".filter-pill").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.dataset.filter || "pending";
+        renderTasks();
+      });
+
+      taskSearchInput.addEventListener("input", renderTasks);
+      clearTaskSearchBtn.addEventListener("click", () => {
+        taskSearchInput.value = "";
+        renderTasks();
+        taskSearchInput.focus();
+      });
+
+      // Task actions (toggle complete, edit, delete)
+      tasksContainer.addEventListener("click", async (e) => {
+        const target = e.target.closest("button[data-action]");
+        if (!target) return;
+        const action = target.dataset.action;
+        const id = target.dataset.id;
+
+        if (action === "toggle-complete") {
+          if (completedTaskIds.has(id)) {
+            completedTaskIds.delete(id);
+            showToast("Tugas ditandai BELUM selesai");
+          } else {
+            completedTaskIds.add(id);
+            showToast("✓ Tugas ditandai SELESAI");
+          }
+          saveCompletedIds();
+          renderTasks();
+          return;
+        }
+
+        if (action === "edit") {
+          const task = tasks.find((t) => t.id === id);
+          if (task) openTaskModal(task);
+          return;
+        }
+
+        if (action === "delete") {
+          if (!confirm("Hapus tugas ini?")) return;
+          try {
+            await deleteTask(id);
+          } catch (err) {
+            console.error("Delete error:", err);
+          }
+          tasks = tasks.filter((t) => t.id !== id);
+          completedTaskIds.delete(id);
+          saveCompletedIds();
+          saveLocalTasks();
+          showToast("Tugas berhasil dihapus.");
+          renderTasks();
+        }
+      });
+
+      function openTaskModal(task = null) {
+        editingTaskId = task ? task.id : null;
+        taskModalTitle.textContent = task ? "Edit Tugas" : "Tambah Tugas";
+        taskSubjectInput.value = task ? task.subject : "";
+        taskDescInput.value = task ? task.description : "";
+        taskDeadlineInput.value = task ? deadlineToInput(task.deadline) : "";
+
+        taskModalDrawer.classList.add("is-open");
+        taskModalDrawer.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeTaskModal() {
+        taskModalDrawer.classList.remove("is-open");
+        taskModalDrawer.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+        editingTaskId = null;
+        taskModalForm.reset();
+      }
+
+      addTaskModalBtn.addEventListener("click", () => openTaskModal());
+      closeTaskModalBtn.addEventListener("click", closeTaskModal);
+      cancelTaskModalBtn.addEventListener("click", closeTaskModal);
+      taskModalDrawer.addEventListener("click", (e) => {
+        if (e.target === taskModalDrawer) closeTaskModal();
+      });
+
+      taskModalForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const subject = taskSubjectInput.value.trim();
+        const description = taskDescInput.value.trim();
+        const deadline = taskDeadlineInput.value;
+
+        if (!subject || !description || !deadline) return;
+
+        try {
+          if (editingTaskId) {
+            await updateTask(editingTaskId, { subject, description, deadline });
+            tasks = tasks.map((t) => (t.id === editingTaskId ? { ...t, subject, description, deadline } : t));
+            showToast("Tugas berhasil diperbarui!");
+          } else {
+            const newTask = await insertTask({ subject, description, deadline });
+            tasks.unshift(newTask);
+            showToast("Tugas berhasil ditambahkan!");
+          }
+        } catch (err) {
+          console.error("Save task error:", err);
+          if (editingTaskId) {
+            tasks = tasks.map((t) => (t.id === editingTaskId ? { ...t, subject, description, deadline } : t));
+          } else {
+            tasks.unshift({ id: `t-${Date.now()}`, subject, description, deadline });
+          }
+          showToast("Tugas disimpan secara lokal.");
+        }
+
+        saveLocalTasks();
+        renderTasks();
+        closeTaskModal();
+      });
+
+      async function loadData() {
+        try {
+          const t = await fetchTasks();
+          if (t && Array.isArray(t) && t.length > 0) {
+            tasks = t;
+            saveLocalTasks();
+          }
+        } catch (err) {
+          console.error("Load tasks error:", err);
+        }
+        renderTasks();
+      }
+
+      loadData();
+    </script>
+  </body>
+</html>

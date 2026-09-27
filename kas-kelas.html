@@ -2,9 +2,10 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Kas Kelas — 9 SCP 2</title>
-    <meta name="description" content="Sistem kas kelas 9 SCP 2" />
+    <meta name="description" content="Sistem kas kelas 9 SCP 2: transparansi saldo, status iuran siswa, dan checklist mingguan." />
+    <meta name="theme-color" content="#F8F8F8" />
     <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -12,174 +13,112 @@
   <body>
     <canvas id="gridPulseCanvas" aria-hidden="true"></canvas>
 
+    <!-- UNIFIED HEADER -->
+    <header id="siteHeader" class="site-header"></header>
+
     <div class="app-shell">
-      <!-- TOPBAR -->
-      <header class="topbar">
-        <div class="brand-block">
-          <div class="brand-kicker-row">
-            <span class="brand-badge">9 SCP 2</span>
+      <!-- PAGE HEADER -->
+      <section class="page-header">
+        <div class="page-header-top">
+          <div class="page-tag">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+              <path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path>
+              <circle cx="18" cy="12" r="2"></circle>
+            </svg>
+            <span>Kas Kelas</span>
           </div>
-          <h1>Kas Kelas</h1>
+          <span id="currentWeekBadge" class="text-secondary" style="font-size: 0.875rem; font-weight: 500;">Memuat periode...</span>
         </div>
-
-        <div class="topbar-actions">
-          <a href="/" class="ghost-btn" style="text-decoration: none;">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            <span>Dashboard</span>
-          </a>
-
-          <button id="loginBtn" class="secret-login-btn" type="button" title="Mode Bendahara (Login)" aria-label="Login bendahara">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="1.5"></circle>
-              <circle cx="19" cy="12" r="1.5"></circle>
-              <circle cx="5" cy="12" r="1.5"></circle>
-            </svg>
-          </button>
-
-          <span id="adminBadge" class="admin-badge hidden">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-            <span id="adminBadgeText">Bendahara</span>
-          </span>
-
-          <button id="logoutBtn" class="ghost-btn hidden" type="button" aria-label="Keluar dari akun">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            <span>Keluar</span>
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h1>Transparansi Kas Kelas</h1>
+            <p class="page-description">Pantau saldo kas, status iuran siswa per minggu, dan riwayat pembayaran.</p>
+          </div>
+          <button id="addPaymentBtn" class="btn-primary admin-only hidden" type="button">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Catat Bayar</span>
           </button>
         </div>
-      </header>
+      </section>
 
-      <!-- MAIN LAYOUT -->
-      <main class="layout" style="gap: 20px;">
-        <!-- SUMMARY PANEL -->
-        <section class="panel" style="grid-column: 1 / -1;">
-          <div class="panel-header-row">
-            <div class="panel-tag">
-              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
-                <path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path>
-                <circle cx="18" cy="12" r="2"></circle>
+      <!-- 1. TOTAL KAS & SUMMARY STATS -->
+      <section style="margin-bottom: 24px;">
+        <div class="grid-3">
+          <!-- Saldo Kas Saat Ini -->
+          <div class="summary-stat-box">
+            <span class="stat-box-label">Saldo Kas Saat Ini</span>
+            <div id="balanceAmount" class="stat-box-value">—</div>
+            <span class="text-muted" style="font-size: 0.75rem;">Saldo fisik kelas</span>
+          </div>
+
+          <!-- Total Tunggakan -->
+          <div class="summary-stat-box">
+            <span class="stat-box-label">Total Tunggakan</span>
+            <div id="totalOutstanding" class="stat-box-value">—</div>
+            <span class="text-muted" style="font-size: 0.75rem;">Total belum terbayar s/d mgg ini</span>
+          </div>
+
+          <!-- Total Siswa -->
+          <div class="summary-stat-box">
+            <span class="stat-box-label">Total Siswa</span>
+            <div id="totalStudents" class="stat-box-value">33</div>
+            <span class="text-muted" style="font-size: 0.75rem;">Kelas 9 SCP 2</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. STATUS PEMBAYARAN SISWA -->
+      <section class="card-panel">
+        <div class="section-head" style="flex-wrap: wrap;">
+          <div class="section-title-wrap">
+            <div class="icon-badge">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
               </svg>
-              <span>Ringkasan Kas</span>
             </div>
-            <div id="currentWeekBadge" class="hero-chip">Memuat...</div>
-          </div>
-
-          <div class="kas-summary-grid">
-            <div class="summary-card hero-card">
-              <div class="summary-label">
-                <div class="icon-pill teal">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
-                    <path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path>
-                    <circle cx="18" cy="12" r="2"></circle>
-                  </svg>
-                </div>
-                <span>Saldo Kas Saat Ini</span>
-              </div>
-              <div id="balanceAmount" class="summary-value">—</div>
-            </div>
-
-            <div class="summary-card">
-              <div class="summary-label">
-                <div class="icon-pill red">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                </div>
-                <span>Total Tunggakan</span>
-              </div>
-              <div id="totalOutstanding" class="summary-value outstanding">—</div>
-            </div>
-
-            <div class="summary-card">
-              <div class="summary-label">
-                <div class="icon-pill slate">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                  </svg>
-                </div>
-                <span>Total Siswa</span>
-              </div>
-              <div id="totalStudents" class="summary-value">33</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- STUDENTS LIST -->
-        <section class="panel" style="grid-column: 1 / -1;">
-          <div class="section-head">
-            <div class="section-title">
-              <div class="icon-badge">
-                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-              </div>
+            <div>
               <h3>Status Iuran Siswa</h3>
-            </div>
-
-            <div class="head-actions">
-              <button id="addPaymentBtn" class="primary-btn hidden" type="button">
-                <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                <span>Catat Bayar</span>
-              </button>
+              <p class="text-muted" style="font-size: 0.75rem;">Ketuk nama siswa untuk melihat rincian mingguan</p>
             </div>
           </div>
+        </div>
 
-          <label class="search-box" for="studentSearch">
-            <svg class="icon-svg search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
+        <!-- Filter & Search Bar -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <div class="filter-pills" id="kasFilterPills" role="tablist">
+            <button type="button" class="filter-pill active" data-filter="all">
+              Semua <span id="countAll" class="pill-count">33</span>
+            </button>
+            <button type="button" class="filter-pill" data-filter="paid">
+              Lunas <span id="countPaid" class="pill-count">0</span>
+            </button>
+            <button type="button" class="filter-pill" data-filter="unpaid">
+              Ada Tunggakan <span id="countUnpaid" class="pill-count">0</span>
+            </button>
+          </div>
+
+          <div class="search-box">
+            <svg class="icon-svg mini search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input id="studentSearch" type="search" placeholder="Cari nama siswa..." aria-label="Cari siswa" />
-            <button id="clearSearchBtn" class="search-clear-btn hidden" type="button" aria-label="Hapus pencarian">×</button>
-          </label>
-
-          <!-- Filter Pills -->
-          <div class="kas-filter-pills" role="tablist" aria-label="Filter status siswa">
-            <button type="button" class="filter-pill-btn active" data-filter="all" role="tab" aria-selected="true">
-              Semua <span id="countAll" class="filter-pill-count">33</span>
-            </button>
-            <button type="button" class="filter-pill-btn" data-filter="paid" role="tab" aria-selected="false">
-              Lunas <span id="countPaid" class="filter-pill-count">0</span>
-            </button>
-            <button type="button" class="filter-pill-btn" data-filter="unpaid" role="tab" aria-selected="false">
-              Ada Tunggakan <span id="countUnpaid" class="filter-pill-count">0</span>
-            </button>
+            <button id="clearSearchBtn" class="search-clear-btn hidden" type="button">×</button>
           </div>
+        </div>
 
-          <div id="studentsContainer" class="students-grid">
-            <div class="empty-state">Memuat data siswa...</div>
-          </div>
-        </section>
-      </main>
+        <div id="studentsContainer" class="stack-list">
+          <div class="loading-state">Memuat data iuran siswa...</div>
+        </div>
+      </section>
     </div>
 
     <!-- ============================================================
          DRAWERS & MODALS
          ============================================================ -->
 
-    <!-- 1. DRAWER: STUDENT DETAIL (Read-only for all) -->
+    <!-- 1. DRAWER: STUDENT DETAIL & 1-TAP CHECKLIST -->
     <div id="studentDetailDrawer" class="drawer-backdrop" aria-hidden="true">
       <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="studentDetailTitle">
         <div class="drawer-head">
@@ -187,22 +126,20 @@
             <span class="drawer-tag">Kas Kelas</span>
             <h3 id="studentDetailTitle">Detail Siswa</h3>
           </div>
-          <button type="button" class="drawer-close-btn" data-close-modal="studentDetailDrawer" aria-label="Tutup detail siswa">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <button type="button" class="drawer-close-btn" id="closeDetailDrawerBtn" aria-label="Tutup detail">×</button>
         </div>
 
         <div class="drawer-body">
-          <!-- Current Week Status -->
-          <div id="detailCurrentWeek" class="current-week-card">
-            <div class="week-status-badge" id="weekStatusBadge">Memuat...</div>
-            <div id="weekDateRange" class="week-date-range"></div>
+          <!-- Current Week Status Banner -->
+          <div class="card-panel" style="padding: 12px; margin-bottom: 14px; background: var(--bg-subtle);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <span class="font-bold" style="font-size: 0.875rem;">Status Minggu Ini:</span>
+              <span id="weekStatusBadge" class="filter-pill active" style="font-size: 0.75rem;">Memuat...</span>
+            </div>
+            <p id="weekDateRange" class="text-muted" style="font-size: 0.75rem; margin-top: 4px;">—</p>
           </div>
 
-          <!-- Summary -->
+          <!-- Summary Numbers -->
           <div class="detail-summary-grid">
             <div class="detail-summary-item">
               <span class="detail-summary-label">Total Wajib</span>
@@ -218,12 +155,9 @@
             </div>
           </div>
 
-          <!-- Payment Actions (Bendahara only) -->
-          <div id="paymentActions" class="hidden" style="margin-top: 14px; display: flex; gap: 8px;">
+          <!-- Quick Action Buttons for Bendahara / Instant Mark -->
+          <div id="paymentActions" style="display: flex; gap: 8px; margin-bottom: 16px;">
             <button id="quickPayBtn" class="quick-action-pill primary" type="button">
-              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
               <span>Bayar Minggu Ini</span>
             </button>
             <button id="payAllPassedBtn" class="quick-action-pill" type="button">
@@ -231,54 +165,53 @@
             </button>
           </div>
 
-          <!-- Payment History with Checklist -->
-          <div style="margin-top: 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-              <h4 style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0;">Checklist Iuran Mingguan</h4>
-              <span id="checklistHint" style="font-size: 0.72rem; color: var(--muted);">Ketuk tombol untuk ubah status</span>
+          <!-- Checklist Mingguan -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="font-bold" style="font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted);">Checklist Iuran Mingguan</span>
+              <span id="checklistHint" style="font-size: 0.72rem; color: var(--ink-muted);">Ketuk tombol untuk ubah status</span>
             </div>
-            <div id="paymentHistoryList" class="payment-history-list">
-              <div class="empty-state" style="padding: 16px;">Memuat riwayat...</div>
+            <div id="paymentHistoryList" style="display: grid; gap: 6px; max-height: 280px; overflow-y: auto;">
+              <div class="loading-state">Memuat riwayat...</div>
             </div>
           </div>
+        </div>
+
+        <div class="drawer-footer">
+          <button type="button" class="btn-secondary" id="closeDetailDrawerFooterBtn">Tutup</button>
         </div>
       </div>
     </div>
 
-    <!-- 2. DRAWER: CATAT PEMBAYARAN (Bendahara only) -->
+    <!-- 2. DRAWER: CATAT PEMBAYARAN MANUAL (Bendahara) -->
     <div id="paymentDrawer" class="drawer-backdrop" aria-hidden="true">
       <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="paymentDrawerTitle">
         <div class="drawer-head">
           <div class="drawer-title-group">
-            <span class="drawer-tag">Kas Kelas</span>
-            <h3 id="paymentDrawerTitle">Catat Pembayaran</h3>
+            <span class="drawer-tag">Formulir</span>
+            <h3 id="paymentDrawerTitle">Catat Pembayaran Kas</h3>
           </div>
-          <button type="button" class="drawer-close-btn" data-close-modal="paymentDrawer" aria-label="Tutup form pembayaran">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <button type="button" class="drawer-close-btn" id="closePaymentDrawerBtn" aria-label="Tutup form">×</button>
         </div>
 
         <form id="paymentForm" class="drawer-form">
-          <div class="drawer-body form-body">
+          <div class="drawer-body">
             <div class="field-group">
-              <label for="paymentStudent">Siswa</label>
+              <label for="paymentStudent">Pilih Siswa</label>
               <select id="paymentStudent" required>
                 <option value="">— Pilih siswa —</option>
               </select>
             </div>
 
             <div class="field-group">
-              <label for="paymentWeek">Periode</label>
+              <label for="paymentWeek">Pilih Periode Minggu</label>
               <select id="paymentWeek" required>
                 <option value="">— Pilih minggu —</option>
               </select>
             </div>
 
             <div class="field-group">
-              <label for="paymentAmount">Nominal</label>
+              <label for="paymentAmount">Nominal (Rp)</label>
               <input id="paymentAmount" type="number" placeholder="5000" required />
             </div>
 
@@ -286,56 +219,8 @@
           </div>
 
           <div class="drawer-footer">
-            <button type="button" class="secondary-btn" data-close-modal="paymentDrawer">Batal</button>
-            <button type="submit" class="primary-btn" id="paymentSubmitBtn">
-              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>Simpan</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 3. MODAL: LOGIN (Bendahara) -->
-    <div id="loginModal" class="drawer-backdrop" aria-hidden="true">
-      <div class="drawer-panel auth-drawer" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-        <div class="drawer-head">
-          <div class="drawer-title-group">
-            <span class="drawer-tag">Autentikasi</span>
-            <h3 id="loginTitle">Mode Bendahara</h3>
-          </div>
-          <button type="button" class="drawer-close-btn" data-close-modal="loginModal" aria-label="Tutup form login">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-
-        <form id="loginForm" class="drawer-form">
-          <div class="drawer-body form-body">
-            <p class="auth-helper-text">Masuk sebagai pengurus kelas untuk mencatat pembayaran dan pengeluaran kas.</p>
-
-            <div class="field-group">
-              <label for="loginUsername">Username / Email</label>
-              <input id="loginUsername" name="username" type="text" placeholder="Masukkan username" required autocomplete="username" />
-            </div>
-
-            <div class="field-group">
-              <label for="loginPassword">Kata Sandi</label>
-              <input id="loginPassword" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
-            </div>
-
-            <p id="loginError" class="form-error hidden" role="alert"></p>
-          </div>
-
-          <div class="drawer-footer">
-            <button type="button" class="secondary-btn" data-close-modal="loginModal">Batal</button>
-            <button type="submit" class="primary-btn" id="loginSubmitBtn">
-              <span>Masuk</span>
-            </button>
+            <button type="button" class="btn-secondary" id="cancelPaymentDrawerBtn">Batal</button>
+            <button type="submit" class="btn-primary" id="paymentSubmitBtn">Simpan</button>
           </div>
         </form>
       </div>

@@ -9,14 +9,21 @@ const url = rawUrl.trim();
 const key = rawKey.trim();
 
 if (!url || !key) {
-  console.error("❌ SUPABASE_URL atau SUPABASE_ANON_KEY belum diset di Vercel Environment Variables!");
-  process.exit(1);
-}
-
-const content = `// File ini di-generate otomatis saat build. Jangan edit manual.
+  if (existsSync("env.js")) {
+    console.log("ℹ️ SUPABASE_URL / SUPABASE_ANON_KEY tidak ditemukan di env, menggunakan env.js yang sudah ada.");
+  } else {
+    console.warn("⚠️ SUPABASE_URL atau SUPABASE_ANON_KEY belum diset. Menulis placeholder env.js untuk mode lokal/offline.");
+    const content = `// File ini di-generate otomatis saat build. Jangan edit manual.
+export const SUPABASE_URL = "https://xxxxxx.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder";
+`;
+    writeFileSync("env.js", content);
+  }
+} else {
+  const content = `// File ini di-generate otomatis saat build. Jangan edit manual.
 export const SUPABASE_URL = ${JSON.stringify(url)};
 export const SUPABASE_ANON_KEY = ${JSON.stringify(key)};
 `;
-
-writeFileSync("env.js", content);
-console.log("✅ env.js berhasil di-generate.");
+  writeFileSync("env.js", content);
+  console.log("✅ env.js berhasil di-generate dari environment variables.");
+}

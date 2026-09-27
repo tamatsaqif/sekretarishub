@@ -1,7 +1,6 @@
 // ============================================================
 // KAS KELAS APPLICATION — 9 SCP 2
 // ============================================================
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./env.js";
 import {
   fetchStudents,
   fetchKasWeeks,
@@ -9,37 +8,32 @@ import {
   fetchAllPayments,
   fetchPaymentsByStudent,
   insertPayment,
-  deletePayment,
   toggleWeekPayment,
   getStudentPaymentStatus,
-  isBendahara,
   getKasSummary,
   getTotalOutstanding,
 } from "./kas.js";
+import {
+  formatCurrency,
+  formatStudentName,
+  getInitials,
+  escapeHtml,
+  showToast,
+  initGridPulse,
+  setupNavigation
+} from "./shared.js";
 
-const { createClient } = window.supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+initGridPulse();
+setupNavigation("kas-kelas");
 
 let students = [];
 let weeks = [];
 let allPayments = [];
 let currentWeek = null;
-let isBendaharaUser = true; // Default true so editing is seamless & instant
 let currentDetailStudentId = null;
 let currentFilter = "all"; // "all" | "paid" | "unpaid"
 
-const BENDAHARA_STORAGE_KEY = "sekretaris9scp2-bendahara-session";
-
 const elements = {
-  loginBtn: document.querySelector("#loginBtn"),
-  logoutBtn: document.querySelector("#logoutBtn"),
-  adminBadge: document.querySelector("#adminBadge"),
-  loginModal: document.querySelector("#loginModal"),
-  loginForm: document.querySelector("#loginForm"),
-  loginUsername: document.querySelector("#loginUsername"),
-  loginPassword: document.querySelector("#loginPassword"),
-  loginError: document.querySelector("#loginError"),
-  loginSubmitBtn: document.querySelector("#loginSubmitBtn"),
   currentWeekBadge: document.querySelector("#currentWeekBadge"),
   balanceAmount: document.querySelector("#balanceAmount"),
   totalOutstanding: document.querySelector("#totalOutstanding"),
@@ -51,10 +45,9 @@ const elements = {
   countAll: document.querySelector("#countAll"),
   countPaid: document.querySelector("#countPaid"),
   countUnpaid: document.querySelector("#countUnpaid"),
-  filterButtons: document.querySelectorAll(".filter-pill-btn"),
+  kasFilterPills: document.querySelector("#kasFilterPills"),
   studentDetailDrawer: document.querySelector("#studentDetailDrawer"),
   studentDetailTitle: document.querySelector("#studentDetailTitle"),
-  detailCurrentWeek: document.querySelector("#detailCurrentWeek"),
   weekStatusBadge: document.querySelector("#weekStatusBadge"),
   weekDateRange: document.querySelector("#weekDateRange"),
   detailTotalDue: document.querySelector("#detailTotalDue"),
@@ -64,7 +57,8 @@ const elements = {
   quickPayBtn: document.querySelector("#quickPayBtn"),
   payAllPassedBtn: document.querySelector("#payAllPassedBtn"),
   paymentHistoryList: document.querySelector("#paymentHistoryList"),
-  checklistHint: document.querySelector("#checklistHint"),
+  closeDetailDrawerBtn: document.querySelector("#closeDetailDrawerBtn"),
+  closeDetailDrawerFooterBtn: document.querySelector("#closeDetailDrawerFooterBtn"),
   paymentDrawer: document.querySelector("#paymentDrawer"),
   paymentForm: document.querySelector("#paymentForm"),
   paymentStudent: document.querySelector("#paymentStudent"),
@@ -72,123 +66,9 @@ const elements = {
   paymentAmount: document.querySelector("#paymentAmount"),
   paymentError: document.querySelector("#paymentError"),
   paymentSubmitBtn: document.querySelector("#paymentSubmitBtn"),
+  closePaymentDrawerBtn: document.querySelector("#closePaymentDrawerBtn"),
+  cancelPaymentDrawerBtn: document.querySelector("#cancelPaymentDrawerBtn"),
 };
-
-// ============================================================
-// GRID PULSE ANIMATION
-// ============================================================
-function initGridPulse() {
-  const canvas = document.querySelector("#gridPulseCanvas");
-  const context = canvas?.getContext("2d");
-  if (!canvas || !context || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-  const cellSize = 26;
-  const cells = new Map();
-  let width = 0;
-  let height = 0;
-  let columns = 0;
-  let rows = 0;
-  let frame = 0;
-  let pointer = null;
-
-  const resize = () => {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    width = window.innerWidth;
-    height = window.innerHeight;
-    columns = Math.ceil(width / cellSize);
-    rows = Math.ceil(height / cellSize);
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    wake();
-  };
-
-  const wake = () => {
-    if (!frame) frame = requestAnimationFrame(draw);
-  };
-
-  const light = (column, row, hold = 900) => {
-    if (column < 0 || row < 0 || column >= columns || row >= rows) return;
-    const key = `${column},${row}`;
-    const existing = cells.get(key);
-    const now = performance.now();
-    if (existing && existing.until > now) {
-      existing.until = Math.max(existing.until, now + hold * 0.35);
-      return;
-    }
-    cells.set(key, { column, row, born: now, until: now + hold });
-    wake();
-  };
-
-  const paint = () => {
-    if (!pointer) return;
-    const column = Math.floor(pointer.x / cellSize);
-    const row = Math.floor(pointer.y / cellSize);
-    for (let y = -2; y <= 2; y += 1) {
-      for (let x = -2; x <= 2; x += 1) {
-        if (Math.hypot(x, y) <= 2.6 && Math.random() > 0.25) light(column + x, row + y, 700 + Math.random() * 900);
-      }
-    }
-  };
-
-  const draw = (now) => {
-    frame = 0;
-    context.clearRect(0, 0, width, height);
-    context.strokeStyle = "rgba(31, 35, 40, 0.08)";
-    context.lineWidth = 1;
-    context.beginPath();
-    for (let x = 0; x <= columns; x += 1) {
-      context.moveTo(x * cellSize + 0.5, 0);
-      context.lineTo(x * cellSize + 0.5, height);
-    }
-    for (let y = 0; y <= rows; y += 1) {
-      context.moveTo(0, y * cellSize + 0.5);
-      context.lineTo(width, y * cellSize + 0.5);
-    }
-    context.stroke();
-
-    for (const [key, cell] of cells) {
-      const elapsed = now - cell.born;
-      const remaining = cell.until - now;
-      if (remaining <= 0) {
-        cells.delete(key);
-        continue;
-      }
-      const alpha = Math.min(0.58, Math.min(1, elapsed / 180) * Math.min(1, remaining / 700) * 0.58);
-      context.fillStyle = `rgba(55, 60, 64, ${alpha})`;
-      context.fillRect(cell.column * cellSize + 2, cell.row * cellSize + 2, cellSize - 3, cellSize - 3);
-    }
-
-    if (cells.size) frame = requestAnimationFrame(draw);
-  };
-
-  let ambient = window.setInterval(() => {
-    light(Math.floor(Math.random() * columns), Math.floor(Math.random() * rows), 2200 + Math.random() * 1200);
-  }, 3600);
-
-  window.addEventListener("resize", resize);
-  window.addEventListener("pointermove", (event) => {
-    pointer = { x: event.clientX, y: event.clientY };
-    paint();
-  }, { passive: true });
-  resize();
-
-  window.addEventListener("beforeunload", () => {
-    clearInterval(ambient);
-    cancelAnimationFrame(frame);
-  }, { once: true });
-}
-
-// ============================================================
-// FORMATTERS & HELPERS
-// ============================================================
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount || 0);
-}
 
 function formatDateRange(startDate, endDate) {
   const start = new Date(startDate);
@@ -197,142 +77,12 @@ function formatDateRange(startDate, endDate) {
   return `${start.getDate()}–${end.getDate()} ${monthNames[start.getMonth()]}`;
 }
 
-function formatStudentName(name) {
-  if (!name) return "";
-  return name
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-function getStudentAvatar(name) {
-  if (!name) return { initials: "?", bg: "rgba(71, 85, 105, 0.1)", color: "#334155" };
-  const words = name.trim().split(/\s+/);
-  let initials = words[0][0];
-  if (words.length > 1) {
-    initials += words[words.length - 1][0];
-  }
-  initials = initials.toUpperCase();
-
-  const palettes = [
-    { bg: "rgba(13, 148, 136, 0.12)", color: "#0f766e" },
-    { bg: "rgba(2, 132, 199, 0.12)", color: "#0369a1" },
-    { bg: "rgba(124, 58, 237, 0.12)", color: "#6d28d9" },
-    { bg: "rgba(219, 39, 119, 0.12)", color: "#be185d" },
-    { bg: "rgba(217, 119, 6, 0.12)", color: "#b45309" },
-    { bg: "rgba(16, 185, 129, 0.12)", color: "#047857" },
-    { bg: "rgba(79, 70, 229, 0.12)", color: "#4338ca" },
-    { bg: "rgba(225, 29, 72, 0.12)", color: "#be123c" },
-  ];
-
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % palettes.length;
-  return { initials, ...palettes[index] };
-}
-
-// ============================================================
-// DRAWERS & MODALS
-// ============================================================
-function openDrawer(drawerElement) {
-  if (!drawerElement) return;
-  drawerElement.classList.add("is-open");
-  drawerElement.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
-}
-
-function closeDrawer(drawerElement) {
-  if (!drawerElement) return;
-  drawerElement.classList.remove("is-open");
-  drawerElement.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = "";
-}
-
-function openLoginModal() {
-  openDrawer(elements.loginModal);
-  elements.loginError.classList.add("hidden");
-  elements.loginError.textContent = "";
-  elements.loginForm.reset();
-}
-
-function closeLoginModal() {
-  closeDrawer(elements.loginModal);
-}
-
-function closeStudentDetailDrawer() {
-  closeDrawer(elements.studentDetailDrawer);
-  currentDetailStudentId = null;
-}
-
-function closePaymentDrawer() {
-  closeDrawer(elements.paymentDrawer);
-}
-
-// ============================================================
-// AUTH & BENDAHARA MODE
-// ============================================================
-function setBendaharaMode(active) {
-  isBendaharaUser = active;
-  if (active) {
-    localStorage.setItem(BENDAHARA_STORAGE_KEY, "active");
-  } else {
-    localStorage.removeItem(BENDAHARA_STORAGE_KEY);
-  }
-
-  elements.loginBtn?.classList.toggle("hidden", active);
-  elements.logoutBtn?.classList.toggle("hidden", !active);
-  elements.adminBadge?.classList.toggle("hidden", !active);
-  elements.addPaymentBtn?.classList.toggle("hidden", !active);
-
-  if (elements.paymentActions) {
-    elements.paymentActions.classList.toggle("hidden", !active);
-  }
-
-  if (elements.checklistHint) {
-    elements.checklistHint.textContent = "Ketuk tombol untuk ubah status iuran";
-  }
-}
-
-// Always enable bendahara mode by default so editing is 100% accessible
-setBendaharaMode(true);
-
-elements.loginBtn?.addEventListener("click", openLoginModal);
-
-elements.logoutBtn?.addEventListener("click", async () => {
-  try {
-    await db.auth.signOut();
-  } catch {
-    // fallback
-  }
-  setBendaharaMode(false);
-  showToast("Keluar dari Mode Bendahara");
-  if (currentDetailStudentId) {
-    openStudentDetail(currentDetailStudentId);
-  }
-});
-
-elements.loginForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  setBendaharaMode(true);
-  closeLoginModal();
-  showToast("Mode Bendahara aktif!");
-  if (currentDetailStudentId) {
-    openStudentDetail(currentDetailStudentId);
-  }
-});
-
 // ============================================================
 // LOAD DATA
 // ============================================================
 async function loadData() {
   try {
-    await Promise.all([
-      loadSummary(),
-      loadStudentsAndPayments(),
-    ]);
+    await Promise.all([loadSummary(), loadStudentsAndPayments()]);
   } catch (err) {
     console.error("Gagal memuat data kas:", err);
   }
@@ -450,36 +200,25 @@ function renderStudents() {
   elements.studentsContainer.innerHTML = filtered
     .map(({ student, shortage, totalPaid, isLunas, isWeekPaid }) => {
       const formattedName = formatStudentName(student.name);
-      const avatar = getStudentAvatar(student.name);
+      const initials = getInitials(student.name);
 
       const statusBadge = isLunas
-        ? `<span class="student-card-week-status paid">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;margin-right:2px;"><polyline points="20 6 9 17 4 12"/></svg>
-            Lunas
-          </span>`
-        : `<span class="student-card-week-status">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;margin-right:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Tunggakan ${formatCurrency(shortage)}
-          </span>`;
+        ? `<span class="status-badge-kas paid">✓ Lunas</span>`
+        : `<span class="status-badge-kas unpaid">Tunggakan ${formatCurrency(shortage)}</span>`;
 
       return `
-        <div class="student-card" data-student-id="${student.id}" role="button" tabindex="0" aria-label="Lihat detail kas ${escapeHtml(formattedName)}">
-          <div class="student-card-left">
-            <div class="student-avatar" style="background:${avatar.bg}; color:${avatar.color};">
-              ${avatar.initials}
-            </div>
-            <div class="student-info-col">
-              <span class="student-card-name">${escapeHtml(formattedName)}</span>
-              <div class="student-card-sub">
-                <span>Total Bayar: <strong>${formatCurrency(totalPaid)}</strong></span>
+        <div class="student-item interactive" data-student-id="${student.id}" role="button" tabindex="0" style="cursor: pointer;">
+          <div class="student-left">
+            <div class="student-avatar">${initials}</div>
+            <div>
+              <span class="student-name">${escapeHtml(formattedName)}</span>
+              <div class="student-sub">
+                Total Bayar: <strong>${formatCurrency(totalPaid)}</strong> · Minggu ini: ${isWeekPaid ? "✓ Sudah" : "Belum"}
               </div>
             </div>
           </div>
-          <div class="student-card-right">
+          <div>
             ${statusBadge}
-            <span class="student-card-shortage-badge ${isWeekPaid ? "is-lunas" : ""}" style="font-size: 0.72rem;">
-              Minggu ini: ${isWeekPaid ? "✓ Sudah" : "Belum"}
-            </span>
           </div>
         </div>
       `;
@@ -488,21 +227,16 @@ function renderStudents() {
 }
 
 // Filter tab clicks
-elements.filterButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    elements.filterButtons.forEach((b) => {
-      b.classList.remove("active");
-      b.setAttribute("aria-selected", "false");
-    });
-    btn.classList.add("active");
-    btn.setAttribute("aria-selected", "true");
-    currentFilter = btn.dataset.filter || "all";
-    renderStudents();
-  });
+elements.kasFilterPills?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".filter-pill");
+  if (!btn) return;
+  elements.kasFilterPills.querySelectorAll(".filter-pill").forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentFilter = btn.dataset.filter || "all";
+  renderStudents();
 });
 
 elements.studentSearch.addEventListener("input", renderStudents);
-
 elements.clearSearchBtn.addEventListener("click", () => {
   elements.studentSearch.value = "";
   elements.clearSearchBtn.classList.add("hidden");
@@ -511,20 +245,10 @@ elements.clearSearchBtn.addEventListener("click", () => {
 });
 
 elements.studentsContainer.addEventListener("click", async (event) => {
-  const card = event.target.closest(".student-card");
+  const card = event.target.closest(".student-item");
   if (!card) return;
   const studentId = card.dataset.studentId;
   await openStudentDetail(studentId);
-});
-
-elements.studentsContainer.addEventListener("keydown", async (event) => {
-  if (event.key === "Enter" || event.key === " ") {
-    const card = event.target.closest(".student-card");
-    if (!card) return;
-    event.preventDefault();
-    const studentId = card.dataset.studentId;
-    await openStudentDetail(studentId);
-  }
 });
 
 // ============================================================
@@ -537,10 +261,26 @@ async function openStudentDetail(studentId) {
   currentDetailStudentId = studentId;
   const formattedName = formatStudentName(student.name);
   elements.studentDetailTitle.textContent = formattedName;
-  openDrawer(elements.studentDetailDrawer);
+
+  elements.studentDetailDrawer.classList.add("is-open");
+  elements.studentDetailDrawer.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
 
   await renderStudentDetailContent(studentId);
 }
+
+function closeStudentDetail() {
+  elements.studentDetailDrawer.classList.remove("is-open");
+  elements.studentDetailDrawer.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+  currentDetailStudentId = null;
+}
+
+elements.closeDetailDrawerBtn.addEventListener("click", closeStudentDetail);
+elements.closeDetailDrawerFooterBtn.addEventListener("click", closeStudentDetail);
+elements.studentDetailDrawer.addEventListener("click", (e) => {
+  if (e.target === elements.studentDetailDrawer) closeStudentDetail();
+});
 
 async function renderStudentDetailContent(studentId) {
   const student = students.find((s) => s.id === studentId);
@@ -558,27 +298,19 @@ async function renderStudentDetailContent(studentId) {
     // Current week banner
     if (currentWeek) {
       const isPaidCurrentWeek = payments.some((p) => p.week_id === currentWeek.id || p.week?.id === currentWeek.id);
-      elements.weekStatusBadge.textContent = isPaidCurrentWeek ? "✓ Sudah Bayar Minggu Ini" : "○ Belum Bayar Minggu Ini";
-      elements.weekStatusBadge.className = `week-status-badge ${isPaidCurrentWeek ? "paid" : ""}`;
+      elements.weekStatusBadge.textContent = isPaidCurrentWeek ? "✓ Sudah Bayar" : "○ Belum Bayar";
+      elements.weekStatusBadge.className = `status-badge-kas ${isPaidCurrentWeek ? "paid" : "unpaid"}`;
 
       const dateRange = formatDateRange(currentWeek.start_date, currentWeek.end_date);
       elements.weekDateRange.textContent = `${currentWeek.month} · Minggu ${currentWeek.week_number} (${dateRange}) · ${formatCurrency(currentWeek.amount)}`;
-
-      if (elements.paymentActions) {
-        elements.paymentActions.classList.remove("hidden");
-      }
     } else {
       elements.weekStatusBadge.textContent = "Tidak ada minggu aktif";
       elements.weekDateRange.textContent = "";
-      if (elements.paymentActions) {
-        elements.paymentActions.classList.add("hidden");
-      }
     }
 
     elements.detailTotalDue.textContent = formatCurrency(totalDue);
     elements.detailTotalPaid.textContent = formatCurrency(totalPaid);
     elements.detailShortage.textContent = shortage > 0 ? formatCurrency(shortage) : "Lunas ✓";
-    elements.detailShortage.className = `detail-summary-value ${shortage > 0 ? "shortage" : ""}`;
 
     // Render payment checklist grouped by month
     const paymentsByWeek = new Map(payments.map((p) => [p.week?.id || p.week_id, p]));
@@ -593,8 +325,8 @@ async function renderStudentDetailContent(studentId) {
 
     let historyHtml = "";
     for (const [month, monthWeeks] of monthGroups) {
-      historyHtml += `<div style="margin-bottom: 14px;">`;
-      historyHtml += `<h4 style="margin: 0 0 6px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);">${escapeHtml(month)}</h4>`;
+      historyHtml += `<div style="margin-bottom: 12px;">`;
+      historyHtml += `<h4 style="margin: 0 0 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted);">${escapeHtml(month)}</h4>`;
 
       monthWeeks
         .sort((a, b) => new Date(b.start_date) - new Date(a.start_date))
@@ -603,27 +335,20 @@ async function renderStudentDetailContent(studentId) {
           const isPaid = !!payment;
           const dateRange = formatDateRange(week.start_date, week.end_date);
 
-          const toggleButton = `
-            <button type="button" 
-                    class="checklist-toggle-btn ${isPaid ? "checked" : ""}" 
-                    data-week-id="${week.id}" 
-                    data-student-id="${studentId}"
-                    data-amount="${week.amount}"
-                    title="Klik untuk ubah status pembayaran">
-              ${isPaid 
-                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="20 6 9 17 4 12"/></svg> Lunas' 
-                : '<span class="empty-dot"></span> Belum'
-              }
-            </button>
-          `;
-
           historyHtml += `
-            <div class="payment-history-item checklist-item" style="margin-bottom: 6px;">
-              <div class="payment-history-week">
-                <span class="payment-history-week-label">Minggu ke-${week.week_number}</span>
-                <span class="payment-history-week-date">${dateRange} · ${formatCurrency(week.amount)}</span>
+            <div class="list-item" style="margin-bottom: 4px; padding: 8px 12px;">
+              <div>
+                <span class="font-bold" style="font-size: 0.8125rem;">Minggu ke-${week.week_number}</span>
+                <div class="text-muted" style="font-size: 0.72rem;">${dateRange} · ${formatCurrency(week.amount)}</div>
               </div>
-              ${toggleButton}
+              <button type="button" 
+                      class="checklist-toggle-btn ${isPaid ? "checked" : ""}" 
+                      data-week-id="${week.id}" 
+                      data-student-id="${studentId}"
+                      data-amount="${week.amount}"
+                      title="Ubah status iuran">
+                ${isPaid ? "✓ Lunas" : "Belum"}
+              </button>
             </div>
           `;
         });
@@ -631,13 +356,13 @@ async function renderStudentDetailContent(studentId) {
       historyHtml += `</div>`;
     }
 
-    elements.paymentHistoryList.innerHTML = historyHtml || '<div class="empty-state" style="padding: 16px;">Belum ada minggu kas.</div>';
+    elements.paymentHistoryList.innerHTML = historyHtml || '<div class="empty-state">Belum ada data minggu kas.</div>';
   } catch (err) {
     console.error("Gagal render detail:", err);
   }
 }
 
-// Checklist toggle listener (1-Tap Instant Toggle)
+// 1-Tap Instant Toggle
 elements.paymentHistoryList.addEventListener("click", async (event) => {
   const btn = event.target.closest(".checklist-toggle-btn");
   if (!btn) return;
@@ -646,47 +371,32 @@ elements.paymentHistoryList.addEventListener("click", async (event) => {
   const weekId = btn.dataset.weekId;
   const amount = parseInt(btn.dataset.amount, 10) || 5000;
 
-  // 1. Optimistic UI update (Instant visual feedback)
   const isCurrentlyChecked = btn.classList.contains("checked");
-  const nextState = !isCurrentlyChecked;
-  btn.classList.toggle("checked", nextState);
-  btn.innerHTML = nextState
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="20 6 9 17 4 12"/></svg> Lunas'
-    : '<span class="empty-dot"></span> Belum';
+  btn.classList.toggle("checked", !isCurrentlyChecked);
+  btn.textContent = !isCurrentlyChecked ? "✓ Lunas" : "Belum";
 
   try {
     const result = await toggleWeekPayment(studentId, weekId, amount);
-    
     const weekObj = weeks.find((w) => w.id === weekId);
     const weekLabel = weekObj ? `${weekObj.month} Mgg ${weekObj.week_number}` : "Minggu";
-    
-    if (result.paid) {
-      showToast(`✓ ${weekLabel} ditandai LUNAS`);
-    } else {
-      showToast(`○ ${weekLabel} ditandai BELUM BAYAR`);
-    }
 
-    // Refresh background state and summary numbers
+    showToast(result.paid ? `✓ ${weekLabel} ditandai LUNAS` : `○ ${weekLabel} ditandai BELUM`);
     await loadData();
     await renderStudentDetailContent(studentId);
   } catch (err) {
     console.error("Toggle error:", err);
-    // Revert on error
     btn.classList.toggle("checked", isCurrentlyChecked);
-    btn.innerHTML = isCurrentlyChecked
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="20 6 9 17 4 12"/></svg> Lunas'
-      : '<span class="empty-dot"></span> Belum';
-    showToast("Gagal mengubah status");
+    btn.textContent = isCurrentlyChecked ? "✓ Lunas" : "Belum";
+    showToast("Gagal mengubah status iuran");
   }
 });
 
-// Quick Pay Current Week
+// Quick Pay
 elements.quickPayBtn?.addEventListener("click", async () => {
   if (!currentDetailStudentId || !currentWeek) return;
-
   try {
     const res = await toggleWeekPayment(currentDetailStudentId, currentWeek.id, currentWeek.amount);
-    showToast(res.paid ? "Minggu ini berhasil ditandai Lunas!" : "Minggu ini ditandai Belum");
+    showToast(res.paid ? "Minggu ini ditandai Lunas!" : "Minggu ini ditandai Belum");
     await loadData();
     await renderStudentDetailContent(currentDetailStudentId);
   } catch (err) {
@@ -694,10 +404,9 @@ elements.quickPayBtn?.addEventListener("click", async () => {
   }
 });
 
-// Pay All Passed Weeks (Lunas sampai minggu ini)
+// Pay All Passed Weeks
 elements.payAllPassedBtn?.addEventListener("click", async () => {
   if (!currentDetailStudentId) return;
-
   const today = new Date();
   const passedWeeks = weeks.filter((w) => new Date(w.start_date) <= today);
 
@@ -709,16 +418,16 @@ elements.payAllPassedBtn?.addEventListener("click", async () => {
           student_id: currentDetailStudentId,
           week_id: week.id,
           amount: week.amount || 5000,
-          recorded_by: "bendahara"
+          recorded_by: "bendahara",
         });
       }
     }
-    showToast("Semua minggu yang berjalan berhasil ditandai Lunas!");
+    showToast("Semua minggu yang telah lewat ditandai Lunas!");
     await loadData();
     await renderStudentDetailContent(currentDetailStudentId);
   } catch (err) {
     console.error("Pay all error:", err);
-    showToast("Gagal menandai semua minggu");
+    showToast("Gagal memproses pembayaran");
   }
 });
 
@@ -744,25 +453,36 @@ function populatePaymentForm() {
       .join("");
 }
 
-elements.addPaymentBtn?.addEventListener("click", () => {
-  openDrawer(elements.paymentDrawer);
+function openPaymentDrawer() {
+  elements.paymentDrawer.classList.add("is-open");
+  elements.paymentDrawer.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
   elements.paymentForm.reset();
   elements.paymentError.classList.add("hidden");
+}
+
+function closePaymentDrawer() {
+  elements.paymentDrawer.classList.remove("is-open");
+  elements.paymentDrawer.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
+elements.addPaymentBtn?.addEventListener("click", openPaymentDrawer);
+elements.closePaymentDrawerBtn?.addEventListener("click", closePaymentDrawer);
+elements.cancelPaymentDrawerBtn?.addEventListener("click", closePaymentDrawer);
+elements.paymentDrawer?.addEventListener("click", (e) => {
+  if (e.target === elements.paymentDrawer) closePaymentDrawer();
 });
 
 elements.paymentWeek?.addEventListener("change", () => {
-  const selectedOption = elements.paymentWeek.selectedOptions[0];
-  if (selectedOption) {
-    const amount = selectedOption.dataset.amount;
-    if (amount) {
-      elements.paymentAmount.value = amount;
-    }
+  const selected = elements.paymentWeek.selectedOptions[0];
+  if (selected && selected.dataset.amount) {
+    elements.paymentAmount.value = selected.dataset.amount;
   }
 });
 
-elements.paymentForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
+elements.paymentForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
   const studentId = elements.paymentStudent.value;
   const weekId = elements.paymentWeek.value;
   const amount = parseInt(elements.paymentAmount.value, 10);
@@ -770,13 +490,13 @@ elements.paymentForm?.addEventListener("submit", async (event) => {
   if (!studentId || !weekId || !amount) return;
 
   elements.paymentSubmitBtn.disabled = true;
-  elements.paymentSubmitBtn.querySelector("span").textContent = "Menyimpan...";
+  elements.paymentSubmitBtn.textContent = "Menyimpan...";
   elements.paymentError.classList.add("hidden");
 
   try {
     const existing = await getStudentPaymentStatus(studentId, weekId);
     if (existing) {
-      elements.paymentError.textContent = "Siswa ini sudah memiliki catatan bayar untuk minggu tersebut.";
+      elements.paymentError.textContent = "Siswa sudah tercatat bayar pada minggu tersebut.";
       elements.paymentError.classList.remove("hidden");
       return;
     }
@@ -791,82 +511,17 @@ elements.paymentForm?.addEventListener("submit", async (event) => {
     closePaymentDrawer();
     showToast("Pembayaran berhasil dicatat!");
     await loadData();
-
     if (currentDetailStudentId) {
       await renderStudentDetailContent(currentDetailStudentId);
     }
   } catch (err) {
-    console.error("Gagal simpan pembayaran:", err);
-    elements.paymentError.textContent = err.message || "Gagal menyimpan pembayaran.";
+    console.error("Save payment error:", err);
+    elements.paymentError.textContent = err?.message || "Gagal mencatat pembayaran.";
     elements.paymentError.classList.remove("hidden");
   } finally {
     elements.paymentSubmitBtn.disabled = false;
-    elements.paymentSubmitBtn.querySelector("span").textContent = "Simpan";
+    elements.paymentSubmitBtn.textContent = "Simpan";
   }
 });
 
-// ============================================================
-// MODAL & DRAWER CLOSE HANDLERS
-// ============================================================
-document.addEventListener("click", (event) => {
-  const closeBtn = event.target.closest("[data-close-modal]");
-  if (closeBtn) {
-    const targetModal = closeBtn.dataset.closeModal;
-    if (targetModal === "loginModal") closeLoginModal();
-    if (targetModal === "studentDetailDrawer") closeStudentDetailDrawer();
-    if (targetModal === "paymentDrawer") closePaymentDrawer();
-    return;
-  }
-
-  if (event.target === elements.loginModal) closeLoginModal();
-  if (event.target === elements.studentDetailDrawer) closeStudentDetailDrawer();
-  if (event.target === elements.paymentDrawer) closePaymentDrawer();
-});
-
-window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    closeLoginModal();
-    closeStudentDetailDrawer();
-    closePaymentDrawer();
-  }
-});
-
-// ============================================================
-// TOAST NOTIFICATIONS
-// ============================================================
-function showToast(message, duration = 3000) {
-  const container = document.querySelector("#toastContainer");
-  if (!container) return;
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.innerHTML = `
-    <svg class="icon-svg toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12"></polyline>
-    </svg>
-    <span>${escapeHtml(message)}</span>
-  `;
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add("toast-exit");
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
-}
-
-// ============================================================
-// UTILS
-// ============================================================
-function escapeHtml(text) {
-  return String(text || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-// ============================================================
-// INIT
-// ============================================================
-initGridPulse();
 loadData();

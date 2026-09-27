@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Jadwal Piket — 9 SCP 2</title>
+    <meta name="description" content="Jadwal petugas piket kelas 9 SCP 2 hari ini dan mingguan." />
+    <meta name="theme-color" content="#F8F8F8" />
+    <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  </head>
+  <body>
+    <canvas id="gridPulseCanvas" aria-hidden="true"></canvas>
+
+    <!-- UNIFIED HEADER -->
+    <header id="siteHeader" class="site-header"></header>
+
+    <div class="app-shell">
+      <!-- PAGE HEADER -->
+      <section class="page-header">
+        <div class="page-header-top">
+          <div class="page-tag">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+            </svg>
+            <span>Piket Kelas</span>
+          </div>
+          <span id="todayDayBadge" class="text-secondary" style="font-size: 0.875rem; font-weight: 500;">Memuat hari...</span>
+        </div>
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h1>Jadwal Petugas Piket</h1>
+            <p class="page-description">Petugas kebersihan kelas 9 SCP 2 untuk hari ini dan jadwal lengkap Senin sampai Jumat.</p>
+          </div>
+          <button id="openPiketDrawerBtn" class="btn-secondary admin-only hidden" type="button">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>Atur Piket</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 1. PIKET HARI INI HERO CARD -->
+      <section class="card-panel" style="margin-bottom: 28px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 245, 247, 0.9));">
+        <div class="section-head">
+          <div class="section-title-wrap">
+            <div class="icon-badge">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 14 14"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h3>Piket Hari Ini</h3>
+              <p id="todayDateDetail" class="text-muted" style="font-size: 0.75rem;">Petugas Bertugas</p>
+            </div>
+          </div>
+          <span id="todayDutyCount" class="filter-pill active" style="font-size: 0.75rem;">0 Petugas</span>
+        </div>
+
+        <div id="todayPiketGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 14px;">
+          <div class="loading-state">Memuat petugas piket hari ini...</div>
+        </div>
+      </section>
+
+      <!-- 2. JADWAL PIKET SENIN - JUMAT -->
+      <section>
+        <div class="section-head">
+          <div class="section-title-wrap">
+            <div class="icon-badge">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+            <h3>Jadwal Piket Mingguan</h3>
+          </div>
+        </div>
+
+        <div class="grid-2" id="weeklyPiketGrid">
+          <div class="loading-state">Memuat jadwal piket mingguan...</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- PIKET DRAWER (Atur Piket) -->
+    <div id="piketDrawer" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel wide" role="dialog" aria-modal="true" aria-labelledby="piketDrawerTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Pengaturan</span>
+            <h3 id="piketDrawerTitle">Atur Petugas Piket</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" id="closePiketDrawerBtn" aria-label="Tutup panel">×</button>
+        </div>
+        <div class="drawer-body" id="piketDrawerBody"></div>
+        <div class="drawer-footer">
+          <button type="button" class="btn-secondary" id="cancelPiketDrawerBtn">Batal</button>
+          <button type="button" class="btn-primary" id="savePiketDrawerBtn">Simpan Piket</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <script type="module">
+      import {
+        WEEKDAYS,
+        DAY_LABELS_ID,
+        getDateKey,
+        formatDate,
+        getInitials,
+        escapeHtml,
+        showToast,
+        initGridPulse,
+        setupNavigation
+      } from "./shared.js";
+      import { fetchPiket, savePiket } from "./supabase.js";
+
+      initGridPulse();
+      setupNavigation("piket");
+
+      const todayKey = getDateKey();
+
+      const DEFAULT_PIKET = {
+        Monday: ["ADZKIYA SAFWA ANAKA", "ALIYAH NUR LATHIFAH", "ALTHAF ZISAN AYDIN R", "ANDI NAUFAL N", "ASHFA HADZIQ H", "ASYIFA NAISILA JELITA", "BETHARI JANITRA IW"],
+        Tuesday: ["BILLIE RAIHAN SAPUTRA", "DAFFA RIDHO ALGHANI", "DELISA ASZAHRA P", "DHAFIN DZIMAR", "DIMAS NARENDRA W", "DIRA SHASMIRA RIANTI", "EDDLYN ARSY ZUHAIR"],
+        Wednesday: ["FADIPTA JAVAS A", "KEI EZHAR ABHIMATA", "KENZO JABBAR LEBCCA", "MALVINO APRILIO PI", "MARITZA ADILIA S", "MOCH DAFFA RAFANDRA", "MOCH NABIL DAVIAN N"],
+        Thursday: ["MUH GHAISAN WIMIANO", "MUH RAFA RABBANI H", "MUH RAFI SYAHPUTRA A", "NAURA KARENZA A Z", "NAYOTTAMA AR", "SABRINA VIDI ARETHA"],
+        Friday: ["VELIKA JASMIN CK", "VINNO IBRAHIM A", "WIDYATAMAKA ZAYYAN", "YUDHISTIRA PERWIRA W", "ZAHRA LAILIA R", "ZUHAL ABDILLAH AFKAR"]
+      };
+
+      let piketData = DEFAULT_PIKET;
+
+      const todayDayBadge = document.querySelector("#todayDayBadge");
+      const todayDateDetail = document.querySelector("#todayDateDetail");
+      const todayDutyCount = document.querySelector("#todayDutyCount");
+      const todayPiketGrid = document.querySelector("#todayPiketGrid");
+      const weeklyPiketGrid = document.querySelector("#weeklyPiketGrid");
+
+      const openPiketDrawerBtn = document.querySelector("#openPiketDrawerBtn");
+      const piketDrawer = document.querySelector("#piketDrawer");
+      const piketDrawerBody = document.querySelector("#piketDrawerBody");
+      const closePiketDrawerBtn = document.querySelector("#closePiketDrawerBtn");
+      const cancelPiketDrawerBtn = document.querySelector("#cancelPiketDrawerBtn");
+      const savePiketDrawerBtn = document.querySelector("#savePiketDrawerBtn");
+
+      todayDayBadge.textContent = DAY_LABELS_ID[todayKey] || todayKey;
+      todayDateDetail.textContent = formatDate();
+
+      function renderPiket() {
+        const todayOfficers = piketData[todayKey] || [];
+        todayDutyCount.textContent = `${todayOfficers.length} Petugas`;
+
+        if (!todayOfficers.length) {
+          todayPiketGrid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; padding: 16px;">Tidak ada jadwal piket hari ini.</div>`;
+        } else {
+          todayPiketGrid.innerHTML = todayOfficers
+            .map((student, idx) => {
+              const initials = getInitials(student);
+              return `
+                <div class="student-item" style="padding: 10px 12px;">
+                  <div class="student-left">
+                    <div class="student-avatar" style="width: 32px; height: 32px; font-size: 0.78rem;">${initials}</div>
+                    <div>
+                      <span class="student-name" style="font-size: 0.875rem;">${escapeHtml(student)}</span>
+                      <div class="student-sub">Petugas ${idx + 1}</div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+        }
+
+        // Weekly schedule cards
+        weeklyPiketGrid.innerHTML = WEEKDAYS.map((day) => {
+          const isToday = day === todayKey;
+          const students = piketData[day] || [];
+          return `
+            <div class="card-panel" style="${isToday ? "border-color: var(--ink-primary); box-shadow: var(--shadow-md);" : ""}">
+              <div class="section-head" style="margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="font-bold" style="font-size: 0.9375rem;">${DAY_LABELS_ID[day] || day}</span>
+                  ${isToday ? '<span class="filter-pill active" style="font-size: 0.6875rem; padding: 2px 8px;">Hari Ini</span>' : ""}
+                </div>
+                <span class="text-muted" style="font-size: 0.75rem;">${students.length} Siswa</span>
+              </div>
+              <ul class="stack-list">
+                ${
+                  students.length
+                    ? students
+                        .map(
+                          (s, idx) => `
+                        <li class="list-item" style="padding: 6px 10px; font-size: 0.84rem;">
+                          <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.75rem; font-weight: 700; color: var(--ink-muted); width: 18px;">0${idx + 1}</span>
+                            <span style="font-weight: 500;">${escapeHtml(s)}</span>
+                          </div>
+                        </li>
+                      `
+                        )
+                        .join("")
+                    : `<li class="empty-state" style="padding: 8px;">Belum ada piket.</li>`
+                }
+              </ul>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function openPiketDrawer() {
+        piketDrawerBody.innerHTML = WEEKDAYS.map(
+          (day) => `
+            <div class="setting-row">
+              <div class="setting-row-header">
+                <span class="setting-day-title">Piket ${DAY_LABELS_ID[day] || day}</span>
+              </div>
+              <textarea data-day="${day}" rows="4" placeholder="Tulis nama siswa per baris atau pisahkan koma...">${escapeHtml(
+                (piketData[day] || []).join("\n")
+              )}</textarea>
+            </div>
+          `
+        ).join("");
+
+        piketDrawer.classList.add("is-open");
+        piketDrawer.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closePiketDrawer() {
+        piketDrawer.classList.remove("is-open");
+        piketDrawer.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }
+
+      openPiketDrawerBtn.addEventListener("click", openPiketDrawer);
+      closePiketDrawerBtn.addEventListener("click", closePiketDrawer);
+      cancelPiketDrawerBtn.addEventListener("click", closePiketDrawer);
+      piketDrawer.addEventListener("click", (e) => {
+        if (e.target === piketDrawer) closePiketDrawer();
+      });
+
+      savePiketDrawerBtn.addEventListener("click", async () => {
+        const textareas = piketDrawerBody.querySelectorAll("textarea[data-day]");
+        textareas.forEach((ta) => {
+          const day = ta.dataset.day;
+          const items = ta.value
+            .split(/\n|,/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          piketData[day] = items.length ? items : ["Belum ada piket"];
+        });
+
+        try {
+          await Promise.all(WEEKDAYS.map((day) => savePiket(day, piketData[day])));
+          showToast("Jadwal piket berhasil disimpan!");
+        } catch (err) {
+          console.error("Save piket error:", err);
+          showToast("Jadwal disimpan secara lokal.");
+        }
+
+        renderPiket();
+        closePiketDrawer();
+      });
+
+      async function loadData() {
+        try {
+          const p = await fetchPiket();
+          if (p && Object.keys(p).length) piketData = { ...piketData, ...p };
+        } catch (err) {
+          console.error("Load piket error:", err);
+        }
+        renderPiket();
+      }
+
+      renderPiket();
+      loadData();
+    </script>
+  </body>
+</html>

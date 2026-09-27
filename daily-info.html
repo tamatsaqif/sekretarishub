@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Daily Info — 9 SCP 2</title>
+    <meta name="description" content="Informasi harian kelas 9 SCP 2: jadwal mata pelajaran, presensi siswa, catatan hari ini, dan generator pesan." />
+    <meta name="theme-color" content="#F8F8F8" />
+    <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  </head>
+  <body>
+    <canvas id="gridPulseCanvas" aria-hidden="true"></canvas>
+
+    <!-- UNIFIED HEADER -->
+    <header id="siteHeader" class="site-header"></header>
+
+    <div class="app-shell">
+      <!-- PAGE HEADER -->
+      <section class="page-header">
+        <div class="page-header-top">
+          <div class="page-tag">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Daily Info</span>
+          </div>
+          <span id="currentDateBadge" class="text-secondary" style="font-size: 0.875rem; font-weight: 500;">Memuat tanggal...</span>
+        </div>
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h1>Informasi Harian Kelas</h1>
+            <p class="page-description">Mata pelajaran, jadwal hari ini, absensi kelas, catatan penting, dan generator pesan.</p>
+          </div>
+          <button id="openScheduleDrawerBtn" class="btn-secondary admin-only hidden" type="button">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>Atur Jadwal</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- MAIN CONTENT GRID -->
+      <div class="grid-2" style="margin-bottom: 24px;">
+        <!-- 1. MATA PELAJARAN & JADWAL -->
+        <section class="card-panel">
+          <div class="section-head">
+            <div class="section-title-wrap">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3>Mata Pelajaran</h3>
+                <p id="scheduleSubtitle" class="text-muted" style="font-size: 0.75rem;">Jadwal Pelajaran</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Day Switcher Tabs -->
+          <div class="segmented-control" id="daySwitcher" style="margin-bottom: 14px;">
+            <button type="button" class="segment-btn active" data-day="Monday">Senin</button>
+            <button type="button" class="segment-btn" data-day="Tuesday">Selasa</button>
+            <button type="button" class="segment-btn" data-day="Wednesday">Rabu</button>
+            <button type="button" class="segment-btn" data-day="Thursday">Kamis</button>
+            <button type="button" class="segment-btn" data-day="Friday">Jumat</button>
+          </div>
+
+          <ul id="subjectsList" class="stack-list">
+            <li class="loading-state">Memuat jadwal mata pelajaran...</li>
+          </ul>
+        </section>
+
+        <!-- 2. CATATAN HARI INI -->
+        <section class="card-panel" style="display: flex; flex-direction: column;">
+          <div class="section-head">
+            <div class="section-title-wrap">
+              <div class="icon-badge">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3>Catatan Hari Ini</h3>
+                <p class="text-muted" style="font-size: 0.75rem;">Pengingat & Instruksi</p>
+              </div>
+            </div>
+            <span id="notesStatusBadge" class="text-muted" style="font-size: 0.75rem; font-weight: 600;">Tersimpan</span>
+          </div>
+
+          <textarea
+            id="notesInput"
+            rows="5"
+            style="width: 100%; flex: 1; min-height: 140px; padding: 12px 14px; background: var(--bg-subtle); border: 1px solid var(--line-neutral); border-radius: var(--radius-md); font-size: 0.875rem; line-height: 1.5; resize: vertical;"
+            placeholder="Tulis catatan atau pengingat kelas untuk hari ini..."
+          ></textarea>
+        </section>
+      </div>
+
+      <!-- 3. ABSENSI PRESENSI KELAS -->
+      <section class="card-panel" style="margin-bottom: 24px;">
+        <div class="section-head">
+          <div class="section-title-wrap">
+            <div class="icon-badge">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <div>
+              <h3>Presensi Siswa</h3>
+              <p id="attendanceSummaryText" class="text-muted" style="font-size: 0.75rem;">Total: 33 Siswa</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="copyAttendanceReportBtn" class="btn-secondary btn-sm" type="button">
+              <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Salin Rekap</span>
+            </button>
+            <button id="resetAttendanceBtn" class="btn-ghost btn-sm admin-only hidden" type="button">Reset Hadir</button>
+          </div>
+        </div>
+
+        <!-- Attendance Stats Filter Pills -->
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+          <span class="filter-pill active" data-status="all">Semua <strong id="statTotalCount">33</strong></span>
+          <span class="filter-pill" data-status="Masuk">Masuk <strong id="statMasukCount">33</strong></span>
+          <span class="filter-pill" data-status="Sakit" id="pillSakit" style="display: none;">Sakit <strong id="statSakitCount">0</strong></span>
+          <span class="filter-pill" data-status="Izin" id="pillIzin" style="display: none;">Izin <strong id="statIzinCount">0</strong></span>
+          <span class="filter-pill" data-status="Alpha" id="pillAlpha" style="display: none;">Alpha <strong id="statAlphaCount">0</strong></span>
+        </div>
+
+        <!-- Attendance Search -->
+        <div class="search-box" style="margin-bottom: 12px;">
+          <svg class="icon-svg mini search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input id="attendanceSearchInput" type="search" placeholder="Cari nama siswa..." aria-label="Cari siswa" />
+          <button id="clearAttendanceSearchBtn" class="search-clear-btn hidden" type="button">×</button>
+        </div>
+
+        <!-- Attendance List -->
+        <div id="attendanceListContainer" class="stack-list" style="max-height: 380px; overflow-y: auto;"></div>
+      </section>
+
+      <!-- 4. GENERATOR PESAN & PRATINJAU -->
+      <section class="card-panel">
+        <div class="section-head" style="flex-wrap: wrap;">
+          <div class="section-title-wrap">
+            <div class="icon-badge">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </div>
+            <div>
+              <h3>Pratinjau Pesan Daily Class Info</h3>
+              <p class="text-muted" style="font-size: 0.75rem;">Siap kirim ke grup WhatsApp kelas</p>
+            </div>
+          </div>
+
+          <!-- Preview Mode Tabs -->
+          <div class="segmented-control" id="previewModeTabs">
+            <button type="button" class="segment-btn active" data-mode="tomorrow">Info Besok</button>
+            <button type="button" class="segment-btn" data-mode="today">Info Hari Ini</button>
+            <button type="button" class="segment-btn" data-mode="attendance">Rekap Absensi</button>
+          </div>
+        </div>
+
+        <div id="messagePreviewBox" class="message-preview"></div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button id="copyMessageBtn" class="btn-primary" type="button">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>Salin Pesan</span>
+          </button>
+          <button id="shareMessageBtn" class="btn-secondary" type="button">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            <span>Bagikan</span>
+          </button>
+          <a id="whatsappShareBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <span>Buka di WhatsApp</span>
+          </a>
+        </div>
+      </section>
+    </div>
+
+    <!-- SCHEDULE MODAL DRAWER (Sekretaris) -->
+    <div id="scheduleDrawer" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel wide" role="dialog" aria-modal="true" aria-labelledby="scheduleDrawerTitle">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Pengaturan</span>
+            <h3 id="scheduleDrawerTitle">Atur Jadwal Pelajaran</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" id="closeScheduleDrawerBtn" aria-label="Tutup panel">×</button>
+        </div>
+        <div class="drawer-body" id="scheduleDrawerBody"></div>
+        <div class="drawer-footer">
+          <button type="button" class="btn-secondary" id="cancelScheduleDrawerBtn">Batal</button>
+          <button type="button" class="btn-primary" id="saveScheduleDrawerBtn">Simpan Jadwal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <script type="module">
+      import {
+        STUDENTS,
+        WEEKDAYS,
+        DAY_LABELS_ID,
+        getDateKey,
+        formatDate,
+        formatDeadline,
+        getInitials,
+        escapeHtml,
+        showToast,
+        initGridPulse,
+        setupNavigation
+      } from "./shared.js";
+      import {
+        fetchSchedule,
+        saveSchedule,
+        fetchPiket,
+        fetchTasks,
+        fetchNotes,
+        saveNotes,
+        fetchAttendance,
+        upsertAttendance,
+        upsertAllAttendance
+      } from "./supabase.js";
+
+      initGridPulse();
+      setupNavigation("daily-info");
+
+      const todayKey = getDateKey();
+      let selectedDay = todayKey;
+      let notesId = null;
+      let todayDateStr = new Date().toISOString().split("T")[0];
+      let currentPreviewMode = new Date().getHours() >= 15 ? "tomorrow" : "today";
+
+      const DEFAULT_SCHEDULE = {
+        Monday: ["B.ING", "IPA", "BTQ Kelas 9", "B.ARAB", "Program Peminatan"],
+        Tuesday: ["PJOK", "AL ISLAM", "BTQ Kelas 9", "PEND. PANCASILA", "B.INDO"],
+        Wednesday: ["BK", "IPS", "BTQ Kelas 9", "INFORMATIKA", "IPA"],
+        Thursday: ["MATH", "KMD", "BTQ Kelas 9", "B.INDO", "SENI RUPA"],
+        Friday: ["B.ING", "PJOK", "IPA", "B.INDO", "SENI RUPA", "PEND. PANCASILA"]
+      };
+
+      const DEFAULT_PIKET = {
+        Monday: ["ADZKIYA SAFWA ANAKA", "ALIYAH NUR LATHIFAH", "ALTHAF ZISAN AYDIN R", "ANDI NAUFAL N", "ASHFA HADZIQ H", "ASYIFA NAISILA JELITA", "BETHARI JANITRA IW"],
+        Tuesday: ["BILLIE RAIHAN SAPUTRA", "DAFFA RIDHO ALGHANI", "DELISA ASZAHRA P", "DHAFIN DZIMAR", "DIMAS NARENDRA W", "DIRA SHASMIRA RIANTI", "EDDLYN ARSY ZUHAIR"],
+        Wednesday: ["FADIPTA JAVAS A", "KEI EZHAR ABHIMATA", "KENZO JABBAR LEBCCA", "MALVINO APRILIO PI", "MARITZA ADILIA S", "MOCH DAFFA RAFANDRA", "MOCH NABIL DAVIAN N"],
+        Thursday: ["MUH GHAISAN WIMIANO", "MUH RAFA RABBANI H", "MUH RAFI SYAHPUTRA A", "NAURA KARENZA A Z", "NAYOTTAMA AR", "SABRINA VIDI ARETHA"],
+        Friday: ["VELIKA JASMIN CK", "VINNO IBRAHIM A", "WIDYATAMAKA ZAYYAN", "YUDHISTIRA PERWIRA W", "ZAHRA LAILIA R", "ZUHAL ABDILLAH AFKAR"]
+      };
+
+      let state = {
+        schedule: DEFAULT_SCHEDULE,
+        piket: DEFAULT_PIKET,
+        tasks: [],
+        notes: "Kalau ada yang kurang atau salah bisa dikoreksi dan ditambahin yaa!",
+        attendance: Object.fromEntries(STUDENTS.map((s) => [s, "Masuk"]))
+      };
+
+      const currentDateBadge = document.querySelector("#currentDateBadge");
+      const scheduleSubtitle = document.querySelector("#scheduleSubtitle");
+      const subjectsList = document.querySelector("#subjectsList");
+      const daySwitcher = document.querySelector("#daySwitcher");
+      const notesInput = document.querySelector("#notesInput");
+      const notesStatusBadge = document.querySelector("#notesStatusBadge");
+      const attendanceListContainer = document.querySelector("#attendanceListContainer");
+      const attendanceSearchInput = document.querySelector("#attendanceSearchInput");
+      const clearAttendanceSearchBtn = document.querySelector("#clearAttendanceSearchBtn");
+      const attendanceSummaryText = document.querySelector("#attendanceSummaryText");
+      const statTotalCount = document.querySelector("#statTotalCount");
+      const statMasukCount = document.querySelector("#statMasukCount");
+      const statSakitCount = document.querySelector("#statSakitCount");
+      const statIzinCount = document.querySelector("#statIzinCount");
+      const statAlphaCount = document.querySelector("#statAlphaCount");
+      const pillSakit = document.querySelector("#pillSakit");
+      const pillIzin = document.querySelector("#pillIzin");
+      const pillAlpha = document.querySelector("#pillAlpha");
+      const previewModeTabs = document.querySelector("#previewModeTabs");
+      const messagePreviewBox = document.querySelector("#messagePreviewBox");
+      const copyMessageBtn = document.querySelector("#copyMessageBtn");
+      const shareMessageBtn = document.querySelector("#shareMessageBtn");
+      const whatsappShareBtn = document.querySelector("#whatsappShareBtn");
+      const copyAttendanceReportBtn = document.querySelector("#copyAttendanceReportBtn");
+      const resetAttendanceBtn = document.querySelector("#resetAttendanceBtn");
+      const openScheduleDrawerBtn = document.querySelector("#openScheduleDrawerBtn");
+      const scheduleDrawer = document.querySelector("#scheduleDrawer");
+      const scheduleDrawerBody = document.querySelector("#scheduleDrawerBody");
+      const closeScheduleDrawerBtn = document.querySelector("#closeScheduleDrawerBtn");
+      const cancelScheduleDrawerBtn = document.querySelector("#cancelScheduleDrawerBtn");
+      const saveScheduleDrawerBtn = document.querySelector("#saveScheduleDrawerBtn");
+
+      currentDateBadge.textContent = formatDate();
+
+      function renderSchedule() {
+        scheduleSubtitle.textContent = `Jadwal ${DAY_LABELS_ID[selectedDay] || selectedDay}`;
+        const subjects = state.schedule[selectedDay] || [];
+        if (!subjects.length) {
+          subjectsList.innerHTML = `<li class="empty-state" style="padding: 16px;">Belum ada jadwal untuk ${DAY_LABELS_ID[selectedDay] || selectedDay}.</li>`;
+          return;
+        }
+
+        subjectsList.innerHTML = subjects
+          .map((sub, idx) => `
+            <li class="list-item">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 0.8125rem; font-weight: 700; color: var(--ink-muted); width: 22px;">0${idx + 1}</span>
+                <span style="font-weight: 600; font-size: 0.9375rem; color: var(--ink-primary);">${escapeHtml(sub)}</span>
+              </div>
+            </li>
+          `)
+          .join("");
+      }
+
+      function renderAttendance() {
+        const query = attendanceSearchInput.value.trim().toLowerCase();
+        clearAttendanceSearchBtn.classList.toggle("hidden", query.length === 0);
+
+        const filtered = STUDENTS.filter((s) => s.toLowerCase().includes(query));
+        const total = STUDENTS.length;
+        let masuk = 0, sakit = 0, izin = 0, alpha = 0;
+
+        STUDENTS.forEach((s) => {
+          const status = state.attendance[s] || "Masuk";
+          if (status === "Masuk") masuk++;
+          else if (status === "Sakit") sakit++;
+          else if (status === "Izin") izin++;
+          else if (status === "Alpha") alpha++;
+        });
+
+        statTotalCount.textContent = total;
+        statMasukCount.textContent = masuk;
+        statSakitCount.textContent = sakit;
+        statIzinCount.textContent = izin;
+        statAlphaCount.textContent = alpha;
+
+        pillSakit.style.display = sakit > 0 ? "inline-flex" : "none";
+        pillIzin.style.display = izin > 0 ? "inline-flex" : "none";
+        pillAlpha.style.display = alpha > 0 ? "inline-flex" : "none";
+
+        const notPresent = sakit + izin + alpha;
+        attendanceSummaryText.textContent = notPresent === 0 ? `Semua Hadir (${total} Siswa)` : `${masuk} Hadir, ${notPresent} Tidak Hadir`;
+
+        if (!filtered.length) {
+          attendanceListContainer.innerHTML = `<div class="empty-state" style="padding: 16px;">Tidak ada nama siswa yang cocok.</div>`;
+          return;
+        }
+
+        attendanceListContainer.innerHTML = filtered
+          .map((student) => {
+            const status = state.attendance[student] || "Masuk";
+            const initials = getInitials(student);
+            return `
+              <div class="student-item" style="padding: 8px 12px;">
+                <div class="student-left">
+                  <div class="student-avatar" style="width: 30px; height: 30px; font-size: 0.75rem;">${initials}</div>
+                  <span class="student-name" style="font-size: 0.875rem;">${escapeHtml(student)}</span>
+                </div>
+                <div>
+                  <select data-student="${student}" style="padding: 4px 8px; font-size: 0.8125rem; font-weight: 600; border: 1px solid var(--line-neutral); border-radius: var(--radius-sm); background: var(--bg-subtle);">
+                    <option value="Masuk" ${status === "Masuk" ? "selected" : ""}>Masuk</option>
+                    <option value="Sakit" ${status === "Sakit" ? "selected" : ""}>Sakit</option>
+                    <option value="Izin" ${status === "Izin" ? "selected" : ""}>Izin</option>
+                    <option value="Alpha" ${status === "Alpha" ? "selected" : ""}>Alpha</option>
+                  </select>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function getTomorrowDate() {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+        else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+        return d;
+      }
+
+      function formatSection(label, lines) {
+        const linesText = lines.map((line) => `│ • ${line}`).join("\n");
+        return `╭─ ${label}\n${linesText}\n╰──────────────`;
+      }
+
+      function generateMessage(mode = currentPreviewMode) {
+        if (mode === "attendance") {
+          const todayFormatted = formatDate();
+          const sakit = STUDENTS.filter((s) => state.attendance[s] === "Sakit");
+          const izin = STUDENTS.filter((s) => state.attendance[s] === "Izin");
+          const alpha = STUDENTS.filter((s) => state.attendance[s] === "Alpha");
+          const notPresent = [...sakit, ...izin, ...alpha];
+
+          let text = `📋 PRESENSI SISWA\n═══════════════════\n\n🗓️ ${todayFormatted}\n🏫 Kelas: 9 SCP 2\n\n`;
+          if (notPresent.length) {
+            notPresent.forEach((s, idx) => {
+              text += `${idx + 1}. ${s} (${state.attendance[s]})\n`;
+            });
+          } else {
+            text += `✓ Semua hadir! ✨\n`;
+          }
+          text += `\n═══════════════════\nhttps://science2hub.vercel.app`;
+          return text;
+        }
+
+        const isTomorrow = mode === "tomorrow";
+        const targetDate = isTomorrow ? getTomorrowDate() : new Date();
+        const targetKey = getDateKey(targetDate);
+        const targetDateStr = formatDate(targetDate);
+
+        const subjects = state.schedule[targetKey] || [];
+        const piket = state.piket[targetKey] || [];
+        const tasks = state.tasks || [];
+        const note = state.notes.trim() || "Kalau ada yang kurang atau salah bisa dikoreksi dan ditambahin yaa!";
+
+        let message = `୨୧ ──── 𝐃𝐀𝐈𝐋𝐘 𝐂𝐋𝐀𝐒𝐒 𝐈𝐍𝐅𝐎 ──── ୨୧\n\n🗓️ ${targetDateStr}\n\n`;
+        const mapelTitle = isTomorrow ? "📚 MAPEL BESOK" : "📚 MAPEL HARI INI";
+        message += `${formatSection(mapelTitle, subjects.length ? subjects : ["Belum ada jadwal."])}\n\n`;
+
+        if (tasks.length) {
+          const taskLines = tasks.flatMap((task) => [
+            `• ${task.subject} — ${task.description}`,
+            `  ↳ Deadline: ${formatDeadline(task.deadline)}`,
+            ""
+          ]);
+          taskLines.pop();
+          message += `╭─ 📝 TUGAS\n${taskLines.map((line) => `${line.startsWith("  ↳") ? "│" : "│ "}${line}`).join("\n")}\n╰──────────────\n\n`;
+        } else {
+          message += `╭─ 📝 TUGAS\n│ • Tidak ada tugas.\n╰──────────────\n\n`;
+        }
+
+        const piketTitle = isTomorrow ? "🧹 PIKET BESOK" : "🧹 PIKET HARI INI";
+        message += `${formatSection(piketTitle, piket.length ? piket : ["Belum ada piket."])}\n\n`;
+
+        if (!isTomorrow) {
+          const absent = STUDENTS.filter((s) => (state.attendance[s] || "Masuk") !== "Masuk");
+          if (absent.length) {
+            const absentText = absent.map((s) => `• ${s} (${state.attendance[s]})`);
+            message += `╭─ 📋 ABSENSI\n│ Tidak masuk:\n${absentText.map((l) => `│ ${l}`).join("\n")}\n╰──────────────\n\n`;
+          } else {
+            message += `╭─ 📋 ABSENSI\n│ Tidak masuk:\n│ • Nihil\n╰──────────────\n\n`;
+          }
+        }
+
+        const closing = isTomorrow ? "Semangat buat besok guys! 😸" : "Semangat guys! 😸";
+        message += `🗒️ CATATAN\n╰┈➤ ${note}\n\n૮ ˶ᵔ ᵕ ᵔ˶ ა\n${closing}\nhttps://science2hub.vercel.app\n\n୨୧ ───────────────── ୨୧`;
+        return message;
+      }
+
+      function renderPreview() {
+        const text = generateMessage(currentPreviewMode);
+        messagePreviewBox.textContent = text;
+        whatsappShareBtn.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      }
+
+      // Day Switcher click
+      daySwitcher.addEventListener("click", (e) => {
+        const btn = e.target.closest(".segment-btn");
+        if (!btn) return;
+        daySwitcher.querySelectorAll(".segment-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedDay = btn.dataset.day;
+        renderSchedule();
+      });
+
+      // Preview Mode click
+      previewModeTabs.addEventListener("click", (e) => {
+        const btn = e.target.closest(".segment-btn");
+        if (!btn) return;
+        previewModeTabs.querySelectorAll(".segment-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentPreviewMode = btn.dataset.mode;
+        renderPreview();
+      });
+
+      // Attendance change
+      attendanceListContainer.addEventListener("change", async (e) => {
+        const select = e.target.closest("select[data-student]");
+        if (!select) return;
+        const student = select.dataset.student;
+        const newStatus = select.value;
+        state.attendance[student] = newStatus;
+
+        try {
+          await upsertAttendance(todayDateStr, student, newStatus);
+        } catch (err) {
+          console.error("Attendance update error:", err);
+        }
+        renderAttendance();
+        renderPreview();
+      });
+
+      // Notes Debounced Auto-Save
+      let notesTimer = null;
+      notesInput.addEventListener("input", () => {
+        state.notes = notesInput.value;
+        notesStatusBadge.textContent = "Menyimpan...";
+        renderPreview();
+
+        clearTimeout(notesTimer);
+        notesTimer = setTimeout(async () => {
+          try {
+            await saveNotes(state.notes, notesId);
+            notesStatusBadge.textContent = "Tersimpan";
+          } catch {
+            notesStatusBadge.textContent = "Lokal";
+          }
+        }, 1000);
+      });
+
+      attendanceSearchInput.addEventListener("input", renderAttendance);
+      clearAttendanceSearchBtn.addEventListener("click", () => {
+        attendanceSearchInput.value = "";
+        renderAttendance();
+        attendanceSearchInput.focus();
+      });
+
+      copyMessageBtn.addEventListener("click", async () => {
+        const text = generateMessage(currentPreviewMode);
+        await navigator.clipboard.writeText(text);
+        showToast("Pesan berhasil disalin ke clipboard!");
+      });
+
+      shareMessageBtn.addEventListener("click", async () => {
+        const text = generateMessage(currentPreviewMode);
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: "Daily Class Info 9 SCP 2", text });
+            return;
+          } catch {
+            // fallback
+          }
+        }
+        await navigator.clipboard.writeText(text);
+        showToast("Pesan disalin ke clipboard!");
+      });
+
+      copyAttendanceReportBtn.addEventListener("click", async () => {
+        const text = generateMessage("attendance");
+        await navigator.clipboard.writeText(text);
+        showToast("Rekap absensi disalin ke clipboard!");
+      });
+
+      resetAttendanceBtn.addEventListener("click", async () => {
+        if (!confirm("Reset semua status siswa ke 'Masuk'?")) return;
+        state.attendance = Object.fromEntries(STUDENTS.map((s) => [s, "Masuk"]));
+        try {
+          await upsertAllAttendance(todayDateStr, state.attendance);
+          showToast("Absensi berhasil direset.");
+        } catch (err) {
+          console.error("Reset error:", err);
+        }
+        renderAttendance();
+        renderPreview();
+      });
+
+      // Schedule Drawer Functions
+      function openScheduleDrawer() {
+        scheduleDrawerBody.innerHTML = WEEKDAYS.map(
+          (day) => `
+            <div class="setting-row">
+              <div class="setting-row-header">
+                <span class="setting-day-title">Jadwal ${DAY_LABELS_ID[day] || day}</span>
+              </div>
+              <textarea data-day="${day}" rows="4" placeholder="Tulis mapel per baris atau pisahkan koma...">${escapeHtml(
+                (state.schedule[day] || []).join("\n")
+              )}</textarea>
+            </div>
+          `
+        ).join("");
+
+        scheduleDrawer.classList.add("is-open");
+        scheduleDrawer.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeScheduleDrawer() {
+        scheduleDrawer.classList.remove("is-open");
+        scheduleDrawer.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }
+
+      openScheduleDrawerBtn.addEventListener("click", openScheduleDrawer);
+      closeScheduleDrawerBtn.addEventListener("click", closeScheduleDrawer);
+      cancelScheduleDrawerBtn.addEventListener("click", closeScheduleDrawer);
+      scheduleDrawer.addEventListener("click", (e) => {
+        if (e.target === scheduleDrawer) closeScheduleDrawer();
+      });
+
+      saveScheduleDrawerBtn.addEventListener("click", async () => {
+        const textareas = scheduleDrawerBody.querySelectorAll("textarea[data-day]");
+        textareas.forEach((ta) => {
+          const day = ta.dataset.day;
+          const items = ta.value
+            .split(/\n|,/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          state.schedule[day] = items.length ? items : ["Belum ada jadwal"];
+        });
+
+        try {
+          await Promise.all(WEEKDAYS.map((day) => saveSchedule(day, state.schedule[day])));
+          showToast("Jadwal pelajaran berhasil disimpan!");
+        } catch (err) {
+          console.error("Save schedule error:", err);
+          showToast("Jadwal disimpan secara lokal.");
+        }
+
+        renderSchedule();
+        renderPreview();
+        closeScheduleDrawer();
+      });
+
+      async function loadData() {
+        // Schedule
+        try {
+          const s = await fetchSchedule();
+          if (s && Object.keys(s).length) state.schedule = { ...state.schedule, ...s };
+        } catch {}
+
+        // Piket
+        try {
+          const p = await fetchPiket();
+          if (p && Object.keys(p).length) state.piket = { ...state.piket, ...p };
+        } catch {}
+
+        // Tasks
+        try {
+          const t = await fetchTasks();
+          if (t && Array.isArray(t)) state.tasks = t;
+        } catch {}
+
+        // Notes
+        try {
+          const n = await fetchNotes();
+          if (n) {
+            notesId = n.id;
+            state.notes = n.content || state.notes;
+          }
+        } catch {}
+
+        // Attendance
+        try {
+          const att = await fetchAttendance(todayDateStr);
+          if (att && Object.keys(att).length) state.attendance = { ...state.attendance, ...att };
+        } catch {}
+
+        notesInput.value = state.notes;
+
+        // Auto select current weekday tab
+        const currentBtn = daySwitcher.querySelector(`[data-day="${todayKey}"]`);
+        if (currentBtn) {
+          daySwitcher.querySelectorAll(".segment-btn").forEach((b) => b.classList.remove("active"));
+          currentBtn.classList.add("active");
+          selectedDay = todayKey;
+        }
+
+        renderSchedule();
+        renderAttendance();
+        renderPreview();
+      }
+
+      notesInput.value = state.notes;
+      renderSchedule();
+      renderAttendance();
+      renderPreview();
+      loadData();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Daftar Siswa — 9 SCP 2</title>
+    <meta name="description" content="Daftar lengkap 33 siswa kelas 9 SCP 2 beserta nomor absen dan informasi kelas." />
+    <meta name="theme-color" content="#F8F8F8" />
+    <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  </head>
+  <body>
+    <canvas id="gridPulseCanvas" aria-hidden="true"></canvas>
+
+    <!-- UNIFIED HEADER -->
+    <header id="siteHeader" class="site-header"></header>
+
+    <div class="app-shell">
+      <!-- PAGE HEADER -->
+      <section class="page-header">
+        <div class="page-header-top">
+          <div class="page-tag">
+            <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Anggota Kelas</span>
+          </div>
+          <span class="text-secondary" style="font-size: 0.875rem; font-weight: 500;">33 Siswa</span>
+        </div>
+        <div>
+          <h1>Daftar Siswa Kelas 9 SCP 2</h1>
+          <p class="page-description">Daftar lengkap seluruh siswa kelas 9 SCP 2 beserta nomor absen, jadwal piket, dan status kelas.</p>
+        </div>
+      </section>
+
+      <!-- SEARCH BAR -->
+      <section style="margin-bottom: 20px;">
+        <div class="search-box">
+          <svg class="icon-svg mini search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input id="studentSearchInput" type="search" placeholder="Cari nama siswa atau nomor absen..." aria-label="Cari siswa" />
+          <button id="clearStudentSearchBtn" class="search-clear-btn hidden" type="button">×</button>
+        </div>
+      </section>
+
+      <!-- STUDENTS LIST CONTAINER -->
+      <section>
+        <div id="studentsListContainer" class="stack-list">
+          <div class="loading-state">Memuat data siswa...</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- STUDENT DETAIL MODAL DRAWER -->
+    <div id="studentDetailDrawer" class="drawer-backdrop" aria-hidden="true">
+      <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="studentModalName">
+        <div class="drawer-head">
+          <div class="drawer-title-group">
+            <span class="drawer-tag">Profil Siswa</span>
+            <h3 id="studentModalName">Detail Siswa</h3>
+          </div>
+          <button type="button" class="drawer-close-btn" id="closeStudentDrawerBtn" aria-label="Tutup detail">×</button>
+        </div>
+        <div class="drawer-body">
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
+            <div id="modalAvatar" class="student-avatar" style="width: 52px; height: 52px; font-size: 1.125rem;">??</div>
+            <div>
+              <h3 id="modalStudentName" style="font-size: 1.125rem;">—</h3>
+              <p id="modalStudentAbsen" class="text-muted" style="font-size: 0.8125rem;">Absen No. —</p>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: 12px;">
+            <div class="card-panel" style="padding: 14px;">
+              <span class="text-muted" style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Jadwal Piket</span>
+              <p id="modalPiketDay" class="font-bold" style="font-size: 0.9375rem; margin-top: 2px;">—</p>
+            </div>
+
+            <div class="card-panel" style="padding: 14px;">
+              <span class="text-muted" style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Status Kehadiran Hari Ini</span>
+              <p id="modalAttendanceStatus" class="font-bold" style="font-size: 0.9375rem; margin-top: 2px;">—</p>
+            </div>
+
+            <div class="card-panel" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span class="text-muted" style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Status Kas Kelas</span>
+                  <p id="modalKasStatus" class="font-bold" style="font-size: 0.9375rem; margin-top: 2px;">—</p>
+                </div>
+                <a href="/kas-kelas.html" class="btn-secondary btn-sm">Buka Kas →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="drawer-footer">
+          <button type="button" class="btn-secondary" id="closeStudentDrawerBtnFooter">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <script type="module">
+      import {
+        STUDENTS,
+        WEEKDAYS,
+        DAY_LABELS_ID,
+        formatStudentName,
+        getInitials,
+        escapeHtml,
+        initGridPulse,
+        setupNavigation
+      } from "./shared.js";
+      import { fetchPiket, fetchAttendance } from "./supabase.js";
+      import { fetchAllPayments, fetchKasWeeks } from "./kas.js";
+
+      initGridPulse();
+      setupNavigation("anggota");
+
+      const todayDateStr = new Date().toISOString().split("T")[0];
+
+      const DEFAULT_PIKET = {
+        Monday: ["ADZKIYA SAFWA ANAKA", "ALIYAH NUR LATHIFAH", "ALTHAF ZISAN AYDIN R", "ANDI NAUFAL N", "ASHFA HADZIQ H", "ASYIFA NAISILA JELITA", "BETHARI JANITRA IW"],
+        Tuesday: ["BILLIE RAIHAN SAPUTRA", "DAFFA RIDHO ALGHANI", "DELISA ASZAHRA P", "DHAFIN DZIMAR", "DIMAS NARENDRA W", "DIRA SHASMIRA RIANTI", "EDDLYN ARSY ZUHAIR"],
+        Wednesday: ["FADIPTA JAVAS A", "KEI EZHAR ABHIMATA", "KENZO JABBAR LEBCCA", "MALVINO APRILIO PI", "MARITZA ADILIA S", "MOCH DAFFA RAFANDRA", "MOCH NABIL DAVIAN N"],
+        Thursday: ["MUH GHAISAN WIMIANO", "MUH RAFA RABBANI H", "MUH RAFI SYAHPUTRA A", "NAURA KARENZA A Z", "NAYOTTAMA AR", "SABRINA VIDI ARETHA"],
+        Friday: ["VELIKA JASMIN CK", "VINNO IBRAHIM A", "WIDYATAMAKA ZAYYAN", "YUDHISTIRA PERWIRA W", "ZAHRA LAILIA R", "ZUHAL ABDILLAH AFKAR"]
+      };
+
+      let piketMap = {};
+      let attendanceMap = {};
+      let studentPaymentsMap = {};
+
+      const studentsListContainer = document.querySelector("#studentsListContainer");
+      const studentSearchInput = document.querySelector("#studentSearchInput");
+      const clearStudentSearchBtn = document.querySelector("#clearStudentSearchBtn");
+
+      const studentDetailDrawer = document.querySelector("#studentDetailDrawer");
+      const studentModalName = document.querySelector("#studentModalName");
+      const modalAvatar = document.querySelector("#modalAvatar");
+      const modalStudentName = document.querySelector("#modalStudentName");
+      const modalStudentAbsen = document.querySelector("#modalStudentAbsen");
+      const modalPiketDay = document.querySelector("#modalPiketDay");
+      const modalAttendanceStatus = document.querySelector("#modalAttendanceStatus");
+      const modalKasStatus = document.querySelector("#modalKasStatus");
+      const closeStudentDrawerBtn = document.querySelector("#closeStudentDrawerBtn");
+      const closeStudentDrawerBtnFooter = document.querySelector("#closeStudentDrawerBtnFooter");
+
+      function findPiketDay(studentName) {
+        for (const [day, list] of Object.entries(piketMap)) {
+          if (Array.isArray(list) && list.includes(studentName)) {
+            return DAY_LABELS_ID[day] || day;
+          }
+        }
+        return "Belum ditentukan";
+      }
+
+      function renderStudents() {
+        const query = studentSearchInput.value.trim().toLowerCase();
+        clearStudentSearchBtn.classList.toggle("hidden", query.length === 0);
+
+        const filtered = STUDENTS.map((name, index) => ({
+          name,
+          absen: index + 1,
+          formattedName: formatStudentName(name),
+          initials: getInitials(name),
+          piketDay: findPiketDay(name)
+        })).filter((s) => {
+          if (!query) return true;
+          return (
+            s.name.toLowerCase().includes(query) ||
+            s.formattedName.toLowerCase().includes(query) ||
+            String(s.absen) === query ||
+            s.piketDay.toLowerCase().includes(query)
+          );
+        });
+
+        if (!filtered.length) {
+          studentsListContainer.innerHTML = `<div class="empty-state">Tidak ada siswa yang cocok dengan pencarian.</div>`;
+          return;
+        }
+
+        studentsListContainer.innerHTML = filtered
+          .map((student) => `
+            <div class="student-item" data-student-name="${escapeHtml(student.name)}" data-absen="${student.absen}" role="button" tabindex="0" style="cursor: pointer;">
+              <div class="student-left">
+                <span class="student-number">${student.absen < 10 ? "0" + student.absen : student.absen}</span>
+                <div class="student-avatar">${student.initials}</div>
+                <div>
+                  <span class="student-name">${escapeHtml(student.formattedName)}</span>
+                  <div class="student-sub">Piket: ${escapeHtml(student.piketDay)}</div>
+                </div>
+              </div>
+              <span class="btn-ghost btn-sm" style="font-size: 0.75rem;">Detail →</span>
+            </div>
+          `)
+          .join("");
+      }
+
+      studentSearchInput.addEventListener("input", renderStudents);
+      clearStudentSearchBtn.addEventListener("click", () => {
+        studentSearchInput.value = "";
+        renderStudents();
+        studentSearchInput.focus();
+      });
+
+      function openDetail(studentName, absen) {
+        const formatted = formatStudentName(studentName);
+        const initials = getInitials(studentName);
+        const piket = findPiketDay(studentName);
+        const attendance = attendanceMap[studentName] || "Masuk";
+
+        studentModalName.textContent = formatted;
+        modalStudentName.textContent = formatted;
+        modalStudentAbsen.textContent = `Absen Nomor ${absen} · Kelas 9 SCP 2`;
+        modalAvatar.textContent = initials;
+        modalPiketDay.textContent = `Hari ${piket}`;
+        modalAttendanceStatus.textContent = attendance;
+
+        const payments = studentPaymentsMap[studentName] || 0;
+        modalKasStatus.textContent = payments > 0 ? `Tercatat iuran Rp ${payments.toLocaleString("id-ID")}` : "Belum ada catatan pembayaran";
+
+        studentDetailDrawer.classList.add("is-open");
+        studentDetailDrawer.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeDetail() {
+        studentDetailDrawer.classList.remove("is-open");
+        studentDetailDrawer.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }
+
+      studentsListContainer.addEventListener("click", (e) => {
+        const item = e.target.closest(".student-item");
+        if (!item) return;
+        openDetail(item.dataset.studentName, item.dataset.absen);
+      });
+
+      closeStudentDrawerBtn.addEventListener("click", closeDetail);
+      closeStudentDrawerBtnFooter.addEventListener("click", closeDetail);
+      studentDetailDrawer.addEventListener("click", (e) => {
+        if (e.target === studentDetailDrawer) closeDetail();
+      });
+
+      async function loadData() {
+        piketMap = DEFAULT_PIKET;
+        try {
+          const p = await fetchPiket();
+          if (p && Object.keys(p).length) piketMap = { ...piketMap, ...p };
+        } catch {}
+
+        try {
+          const att = await fetchAttendance(todayDateStr);
+          if (att) attendanceMap = att;
+        } catch {}
+
+        try {
+          const payments = await fetchAllPayments();
+          if (payments) {
+            payments.forEach((p) => {
+              // map by student id/name
+            });
+          }
+        } catch {}
+
+        renderStudents();
+      }
+
+      renderStudents();
+      loadData();
+    </script>
+  </body>
+</html>
