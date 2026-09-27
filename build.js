@@ -19,7 +19,4 @@ export const SUPABASE_ANON_KEY = ${JSON.stringify(key)};
 `;
 
 writeFileSync("env.js", content);
-if (existsSync("app")) {
-  writeFileSync("app/env.js", content);
-}
 console.log("✅ env.js berhasil di-generate.");

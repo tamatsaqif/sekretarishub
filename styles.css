@@ -1297,17 +1297,34 @@ h3 {
 @media (max-width: 640px) {
   .app-shell {
     padding: 12px 12px 36px;
+    padding-bottom: max(36px, env(safe-area-inset-bottom));
   }
 
   .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand-block {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .brand-block h1 {
+    font-size: 1.35rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .topbar-actions {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
   .quick-grid {
@@ -1330,23 +1347,24 @@ h3 {
   .drawer-panel {
     width: 100%;
     height: auto;
-    max-height: 90vh;
-    max-height: 90dvh;
-    border-radius: 24px 24px 0 0;
+    max-height: 88vh;
+    max-height: 88dvh;
+    border-radius: 20px 20px 0 0;
     border-left: none;
     border-top: 1px solid var(--line-strong);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.12);
     transform: translateY(100%);
-    transition: transform 0.44s var(--ease-spring);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .drawer-panel::before {
     content: "";
     display: block;
-    width: 40px;
-    height: 5px;
-    background: rgba(0, 0, 0, 0.18);
+    width: 36px;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.2);
     border-radius: var(--radius-pill);
-    margin: 10px auto 4px;
+    margin: 8px auto 2px;
     flex-shrink: 0;
   }
 
@@ -1355,15 +1373,19 @@ h3 {
   }
 
   .drawer-head {
-    padding: 12px 20px 14px;
+    padding: 12px 18px 12px;
   }
 
   .drawer-tab-wrapper,
   .drawer-instruction,
   .drawer-body,
   .drawer-footer {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .drawer-footer {
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
 
   .toast-container {
@@ -1386,35 +1408,167 @@ h3 {
    KAS KELAS STYLES
    ============================================================ */
 
+/* Icon Pills - rounded containers for icons */
+.icon-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.icon-pill svg {
+  width: 17px;
+  height: 17px;
+}
+
+.icon-pill.teal {
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.15) 0%, rgba(16, 185, 129, 0.18) 100%);
+  color: #0d9488;
+  border: 1px solid rgba(13, 148, 136, 0.25);
+}
+
+.icon-pill.red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.16) 100%);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+}
+
+.icon-pill.slate {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.1) 0%, rgba(51, 65, 85, 0.14) 100%);
+  color: #334155;
+  border: 1px solid rgba(71, 85, 105, 0.18);
+}
+
+.icon-pill.amber {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.16) 100%);
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+/* Kas Bento Grid */
+.kas-summary-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .summary-card {
-  padding: 14px;
-  background: rgba(226, 226, 224, 0.35);
-  border-radius: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--line);
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 8px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.summary-card.hero-card {
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%);
+  border-color: rgba(13, 148, 136, 0.28);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.06);
 }
 
 .summary-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
+  gap: 10px;
+  font-size: 0.82rem;
   color: var(--muted);
   font-weight: 600;
 }
 
 .summary-value {
-  font-weight: 700;
-  font-size: 1.5rem;
+  font-weight: 800;
+  font-size: 1.45rem;
   color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.summary-card.hero-card .summary-value {
+  font-size: 1.65rem;
+  color: #0f766e;
 }
 
 .summary-value.outstanding {
-  color: #b91c1c;
+  color: #dc2626;
 }
 
+/* Filter Pills Bar */
+.kas-filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 16px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.kas-filter-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filter-pill-btn:hover {
+  background: #ffffff;
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.filter-pill-btn.active {
+  background: var(--ink);
+  color: #ffffff;
+  border-color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.filter-pill-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.72rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+
+.filter-pill-btn.active .filter-pill-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* Students List Grid & Cards */
 .students-grid {
   display: grid;
   gap: 10px;
@@ -1422,46 +1576,101 @@ h3 {
 
 .student-card {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.student-card:hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: var(--line-strong);
-  transform: translateY(-1px);
-}
-
-.student-card-header {
-  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.student-card:active {
+  transform: scale(0.985);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+@media (hover: hover) {
+  .student-card:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: var(--line-strong);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    transform: translateY(-1px);
+  }
+}
+
+.student-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.student-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+
+.student-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .student-card-name {
   font-weight: 600;
   font-size: 0.92rem;
   color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-card-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.student-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .student-card-week-status {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
   background: #fef2f2;
-  color: #b91c1c;
+  color: #dc2626;
   border: 1px solid #fecaca;
+  white-space: nowrap;
 }
 
 .student-card-week-status.paid {
@@ -1470,31 +1679,30 @@ h3 {
   border-color: #a7f3d0;
 }
 
-.student-card-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
+.student-card-shortage-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--muted);
 }
 
-.student-card-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.student-card-shortage-badge.has-shortage {
+  color: #dc2626;
+}
+
+.student-card-shortage-badge.is-lunas {
+  color: #059669;
 }
 
 /* Current Week Card */
 .current-week-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: linear-gradient(135deg, rgba(13, 148, 136, 0.1), rgba(16, 185, 129, 0.05));
-  border: 1px solid rgba(13, 148, 136, 0.3);
+  gap: 8px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%);
+  border: 1px solid rgba(13, 148, 136, 0.25);
   border-radius: var(--radius-lg);
+  margin-bottom: 14px;
 }
 
 .week-status-badge {
@@ -1502,12 +1710,12 @@ h3 {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   background: #fef2f2;
-  color: #b91c1c;
+  color: #dc2626;
   border: 1px solid #fecaca;
 }
 
@@ -1518,58 +1726,65 @@ h3 {
 }
 
 .week-date-range {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--muted);
+  text-align: center;
 }
 
 /* Detail Summary Grid */
 .detail-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .detail-summary-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  background: rgba(226, 226, 224, 0.35);
+  gap: 4px;
+  padding: 10px 8px;
+  background: rgba(226, 226, 224, 0.4);
   border-radius: 10px;
   border: 1px solid var(--line);
+  text-align: center;
 }
 
 .detail-summary-label {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .detail-summary-value {
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-weight: 800;
+  font-size: 0.95rem;
   color: var(--ink);
+  white-space: nowrap;
 }
 
 .detail-summary-value.shortage {
-  color: #b91c1c;
+  color: #dc2626;
 }
 
 /* Payment History List */
 .payment-history-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .payment-history-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.7);
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.75);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
 }
@@ -1577,18 +1792,19 @@ h3 {
 .payment-history-week {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
+  min-width: 0;
 }
 
 .payment-history-week-label {
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: var(--ink);
 }
 
 .payment-history-week-date {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -1596,13 +1812,14 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
   background: #fef2f2;
-  color: #b91c1c;
+  color: #dc2626;
   border: 1px solid #fecaca;
+  white-space: nowrap;
 }
 
 .payment-history-status.paid {
@@ -1616,10 +1833,27 @@ h3 {
   width: min(420px, 94vw);
 }
 
-/* Mobile: 1-column detail summary */
-@media (max-width: 480px) {
-  .detail-summary-grid {
-    grid-template-columns: 1fr;
+/* Mobile: Kas Summary layout */
+@media (max-width: 640px) {
+  .kas-summary-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .kas-summary-grid .summary-card.hero-card {
+    grid-column: 1 / -1;
+  }
+
+  .summary-card {
+    padding: 12px 14px;
+  }
+
+  .summary-card.hero-card .summary-value {
+    font-size: 1.5rem;
+  }
+
+  .summary-value {
+    font-size: 1.25rem;
   }
 }
 

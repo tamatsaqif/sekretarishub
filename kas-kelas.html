@@ -59,39 +59,44 @@
       </header>
 
       <!-- MAIN LAYOUT -->
-      <main class="layout" style="gap: 24px;">
+      <main class="layout" style="gap: 20px;">
         <!-- SUMMARY PANEL -->
         <section class="panel" style="grid-column: 1 / -1;">
           <div class="panel-header-row">
             <div class="panel-tag">
               <svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <line x1="12" y1="1" x2="12" y2="23"></line>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                <rect x="2" y="5" width="20" height="14" rx="3" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+                <circle cx="17" cy="15" r="1.5" fill="currentColor" />
+                <path d="M6 15h4" />
               </svg>
               <span>Ringkasan Kas</span>
             </div>
             <div id="currentWeekBadge" class="hero-chip">Memuat...</div>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
-            <div class="summary-card">
+          <div class="kas-summary-grid">
+            <div class="summary-card hero-card">
               <div class="summary-label">
-                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                </svg>
-                <span>Saldo Kas</span>
+                <div class="icon-pill teal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                </div>
+                <span>Saldo Kas Saat Ini</span>
               </div>
               <div id="balanceAmount" class="summary-value">—</div>
             </div>
 
             <div class="summary-card">
               <div class="summary-label">
-                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
-                  <path d="M12 18V6"></path>
-                </svg>
+                <div class="icon-pill red">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                </div>
                 <span>Total Tunggakan</span>
               </div>
               <div id="totalOutstanding" class="summary-value outstanding">—</div>
@@ -99,12 +104,14 @@
 
             <div class="summary-card">
               <div class="summary-label">
-                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
+                <div class="icon-pill slate">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                </div>
                 <span>Total Siswa</span>
               </div>
               <div id="totalStudents" class="summary-value">33</div>
@@ -124,7 +131,7 @@
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
               </div>
-              <h3>Daftar Siswa</h3>
+              <h3>Status Iuran Siswa</h3>
             </div>
 
             <div class="head-actions">
@@ -146,6 +153,19 @@
             <input id="studentSearch" type="search" placeholder="Cari nama siswa..." aria-label="Cari siswa" />
             <button id="clearSearchBtn" class="search-clear-btn hidden" type="button" aria-label="Hapus pencarian">×</button>
           </label>
+
+          <!-- Filter Pills -->
+          <div class="kas-filter-pills" role="tablist" aria-label="Filter status siswa">
+            <button type="button" class="filter-pill-btn active" data-filter="all" role="tab" aria-selected="true">
+              Semua <span id="countAll" class="filter-pill-count">33</span>
+            </button>
+            <button type="button" class="filter-pill-btn" data-filter="paid" role="tab" aria-selected="false">
+              Lunas <span id="countPaid" class="filter-pill-count">0</span>
+            </button>
+            <button type="button" class="filter-pill-btn" data-filter="unpaid" role="tab" aria-selected="false">
+              Ada Tunggakan <span id="countUnpaid" class="filter-pill-count">0</span>
+            </button>
+          </div>
 
           <div id="studentsContainer" class="students-grid">
             <div class="empty-state">Memuat data siswa...</div>

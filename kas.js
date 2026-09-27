@@ -69,6 +69,14 @@ async function fetchPaymentsByStudent(studentId) {
   return data;
 }
 
+async function fetchAllPayments() {
+  const { data, error } = await db
+    .from("kas_payments")
+    .select("id, student_id, week_id, amount, paid_at, recorded_by");
+  if (error) throw error;
+  return data || [];
+}
+
 async function fetchPaymentsByWeek(weekId) {
   const { data, error } = await db
     .from("kas_payments")
@@ -232,6 +240,7 @@ export {
   fetchKasWeeks,
   getCurrentWeek,
   fetchPaymentsByStudent,
+  fetchAllPayments,
   fetchPaymentsByWeek,
   insertPayment,
   updatePayment,
