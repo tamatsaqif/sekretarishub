@@ -1,13 +1,13 @@
 // ============================================================
-// KAS KELAS FUNCTIONS & DATA LAYER — 9 SCP 2
+// KAS KELAS FUNCTIONS & DATA STORE — 9 SCP 2
 // ============================================================
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./env.js";
 
-const { createClient } = window.supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const { createClient } = window.supabase || {};
+const db = createClient ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // ============================================================
-// DEFAULT FALLBACK DATA (Snapshot per 21 September 2026)
+// DEFAULT SEED DATA (Snapshot per 21 September 2026)
 // ============================================================
 const DEFAULT_STUDENTS = [
   { id: "s-1", name: "ADZKIYA SAFWA ANAKA" },
@@ -70,7 +70,6 @@ function createDefaultPayments() {
     "w-okt-1", "w-okt-2"
   ];
 
-  // Mapping jumlah minggu yang sudah dibayar per siswa
   const studentPaidWeeks = {
     "s-1": 9,   // Adzkiya (tunggakan 5k)
     "s-2": 8,   // Aliya (tunggakan 10k)
@@ -127,341 +126,278 @@ function createDefaultPayments() {
   return payments;
 }
 
-const LOCAL_STORAGE_KEY_PAYMENTS = "sekretaris9scp2-kas-payments-v1";
+// ============================================================
+// UNIFIED LOCAL STORE (Source of Truth)
+// ============================================================
+const KAS_STORAGE_KEY = "sekretaris9scp2-kas-unified-store-v2";
 const INITIAL_RECORDED_PAYMENTS = 785000;
 const BASE_PHYSICAL_BALANCE = 840000;
 
-function getLocalPayments() {
-  const saved = localStorage.getItem(LOCAL_STORAGE_KEY_PAYMENTS);
-  if (saved) {
+let kasState = {
+  students: DEFAULT_STUDENTS,
+  weeks: DEFAULT_WEEKS,
+  payments: createDefaultPayments(),
+  expenses: [],
+  baseBalance: BASE_PHYSICAL_BALANCE,
+};
+
+function loadKasState() {
+  if (typeof localStorage === "undefined") return kasState;
+  const raw = localStorage.getItem(KAS_STORAGE_KEY);
+  if (raw) {
     try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) return parsed;
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.payments)) {
+        kasState.students = (parsed.students && parsed.students.length) ? parsed.students : DEFAULT_STUDENTS;
+        kasState.weeks = (parsed.weeks && parsed.weeks.length) ? parsed.weeks : DEFAULT_WEEKS;
+        kasState.payments = parsed.payments;
+        kasState.expenses = parsed.expenses || [];
+        kasState.baseBalance = parsed.baseBalance || BASE_PHYSICAL_BALANCE;
+        return kasState;
+      }
     } catch {
       // fallback
     }
   }
-  const initial = createDefaultPayments();
-  localStorage.setItem(LOCAL_STORAGE_KEY_PAYMENTS, JSON.stringify(initial));
-  return initial;
+
+  kasState.students = DEFAULT_STUDENTS;
+  kasState.weeks = DEFAULT_WEEKS;
+  kasState.payments = createDefaultPayments();
+  kasState.expenses = [];
+  kasState.baseBalance = BASE_PHYSICAL_BALANCE;
+  saveKasState();
+  return kasState;
 }
 
-function saveLocalPayments(payments) {
-  localStorage.setItem(LOCAL_STORAGE_KEY_PAYMENTS, JSON.stringify(payments));
+function saveKasState() {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(KAS_STORAGE_KEY, JSON.stringify(kasState));
 }
+
+// Initialize immediately
+loadKasState();
 
 // ============================================================
-// STUDENTS
+// DATA ACCESSORS (Fast, Local & Realtime)
 // ============================================================
 async function fetchStudents() {
-  try {
-    const { data, error } = await db
-      .from("students")
-      .select("id, name")
-      .order("name", { ascending: true });
-    if (error || !data || data.length === 0) throw error || new Error("No data");
-    return data;
-  } catch {
-    return DEFAULT_STUDENTS;
-  }
+  loadKasState();
+  return kasState.students;
 }
 
-// ============================================================
-// KAS_WEEKS
-// ============================================================
 async function fetchKasWeeks() {
-  try {
-    const { data, error } = await db
-      .from("kas_weeks")
-      .select("*")
-      .order("start_date", { ascending: false });
-    if (error || !data || data.length === 0) throw error || new Error("No data");
-    return data;
-  } catch {
-    return DEFAULT_WEEKS;
-  }
+  loadKasState();
+  return kasState.weeks;
 }
 
 async function getCurrentWeek() {
+  loadKasState();
   const today = new Date().toISOString().split("T")[0];
-  try {
-    const { data, error } = await db
-      .from("kas_weeks")
-      .select("*")
-      .lte("start_date", today)
-      .gte("end_date", today)
-      .maybeSingle();
-    if (error || !data) throw error || new Error("No current week");
-    return data;
-  } catch {
-    return (
-      DEFAULT_WEEKS.find((w) => w.start_date <= today && w.end_date >= today) ||
-      DEFAULT_WEEKS.find((w) => w.id === "w-sep-4") ||
-      DEFAULT_WEEKS[0]
-    );
-  }
+  return (
+    kasState.weeks.find((w) => w.start_date <= today && w.end_date >= today) ||
+    kasState.weeks.find((w) => w.id === "w-sep-4") ||
+    kasState.weeks[0]
+  );
 }
 
-// ============================================================
-// KAS_PAYMENTS
-// ============================================================
 async function fetchAllPayments() {
-  try {
-    const { data, error } = await db
-      .from("kas_payments")
-      .select("id, student_id, week_id, amount, paid_at, recorded_by");
-    if (error || !data || data.length === 0) throw error || new Error("No data");
-    return data;
-  } catch {
-    return getLocalPayments();
-  }
+  loadKasState();
+  return kasState.payments;
 }
 
 async function fetchPaymentsByStudent(studentId) {
-  try {
-    const { data, error } = await db
-      .from("kas_payments")
-      .select(`
-        id,
-        amount,
-        paid_at,
-        week:kas_weeks (
-          id,
-          month,
-          week_number,
-          start_date,
-          end_date
-        )
-      `)
-      .eq("student_id", studentId)
-      .order("paid_at", { ascending: false });
-    if (error || !data || data.length === 0) throw error || new Error("No data");
-    return data;
-  } catch {
-    const all = getLocalPayments();
-    const studentPayments = all.filter((p) => p.student_id === studentId);
-    return studentPayments.map((p) => {
-      const week = DEFAULT_WEEKS.find((w) => w.id === p.week_id) || {
-        id: p.week_id,
-        month: "September 2026",
-        week_number: 4,
-        start_date: "2026-09-21",
-        end_date: "2026-09-27"
-      };
-      return {
-        id: p.id,
-        amount: p.amount,
-        paid_at: p.paid_at,
-        week_id: p.week_id,
-        student_id: p.student_id,
-        week
-      };
-    });
-  }
+  loadKasState();
+  const studentPayments = kasState.payments.filter((p) => p.student_id === studentId);
+  return studentPayments.map((p) => {
+    const week = kasState.weeks.find((w) => w.id === p.week_id) || {
+      id: p.week_id,
+      month: "September 2026",
+      week_number: 4,
+      start_date: "2026-09-21",
+      end_date: "2026-09-27"
+    };
+    return {
+      id: p.id,
+      amount: p.amount,
+      paid_at: p.paid_at,
+      week_id: p.week_id,
+      student_id: p.student_id,
+      week
+    };
+  });
 }
 
 async function fetchPaymentsByWeek(weekId) {
-  try {
-    const { data, error } = await db
-      .from("kas_payments")
-      .select(`
-        id,
-        amount,
-        paid_at,
-        recorded_by,
-        student:students (id, name)
-      `)
-      .eq("week_id", weekId)
-      .order("student.name", { ascending: true });
-    if (error || !data || data.length === 0) throw error || new Error("No data");
-    return data;
-  } catch {
-    const all = getLocalPayments();
-    return all.filter((p) => p.week_id === weekId);
-  }
+  loadKasState();
+  return kasState.payments.filter((p) => p.week_id === weekId);
+}
+
+async function getStudentPaymentStatus(studentId, weekId) {
+  loadKasState();
+  return kasState.payments.find((p) => p.student_id === studentId && p.week_id === weekId) || null;
 }
 
 async function insertPayment(data) {
-  try {
-    const { error } = await db.from("kas_payments").insert(data);
-    if (error) console.warn("Supabase insert payment skipped:", error.message);
-  } catch (err) {
-    console.warn("Supabase insert payment failed:", err);
-  }
+  loadKasState();
+  const studentId = data.student_id;
+  const weekId = data.week_id;
+  const amount = Number(data.amount) || 5000;
 
-  // Always persist locally
-  const current = getLocalPayments();
-  const exists = current.some((p) => p.student_id === data.student_id && p.week_id === data.week_id);
-  if (!exists) {
-    const newPayment = {
+  const existingIdx = kasState.payments.findIndex((p) => p.student_id === studentId && p.week_id === weekId);
+  if (existingIdx >= 0) {
+    kasState.payments[existingIdx].amount = amount;
+  } else {
+    kasState.payments.push({
       id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      student_id: data.student_id,
-      week_id: data.week_id,
-      amount: Number(data.amount) || 5000,
+      student_id: studentId,
+      week_id: weekId,
+      amount,
       paid_at: new Date().toISOString(),
       recorded_by: data.recorded_by || "bendahara"
-    };
-    current.push(newPayment);
-    saveLocalPayments(current);
+    });
   }
-}
+  saveKasState();
 
-async function updatePayment(id, data) {
-  try {
-    await db.from("kas_payments").update(data).eq("id", id);
-  } catch (err) {
-    console.warn(err);
+  if (db) {
+    db.from("kas_payments")
+      .insert({
+        student_id: studentId,
+        week_id: weekId,
+        amount,
+        recorded_by: data.recorded_by || "bendahara"
+      })
+      .then(() => {})
+      .catch(() => {});
   }
 }
 
 async function deletePayment(id, studentId = null, weekId = null) {
-  try {
-    if (id) {
-      await db.from("kas_payments").delete().eq("id", id);
-    } else if (studentId && weekId) {
-      await db.from("kas_payments").delete().eq("student_id", studentId).eq("week_id", weekId);
-    }
-  } catch (err) {
-    console.warn("Supabase delete skipped:", err);
-  }
-
-  const current = getLocalPayments().filter((p) => {
+  loadKasState();
+  kasState.payments = kasState.payments.filter((p) => {
     if (id && p.id === id) return false;
     if (studentId && weekId && p.student_id === studentId && p.week_id === weekId) return false;
     return true;
   });
-  saveLocalPayments(current);
+  saveKasState();
+
+  if (db) {
+    if (id) {
+      db.from("kas_payments").delete().eq("id", id).then(() => {}).catch(() => {});
+    } else if (studentId && weekId) {
+      db.from("kas_payments").delete().eq("student_id", studentId).eq("week_id", weekId).then(() => {}).catch(() => {});
+    }
+  }
 }
 
-async function getStudentPaymentStatus(studentId, weekId) {
-  try {
-    const { data, error } = await db
-      .from("kas_payments")
-      .select("id, amount")
-      .eq("student_id", studentId)
-      .eq("week_id", weekId)
-      .maybeSingle();
-    if (error) throw error;
-    if (data) return data;
-  } catch {
-    // fallback
+async function updatePayment(id, data) {
+  loadKasState();
+  const idx = kasState.payments.findIndex((p) => p.id === id);
+  if (idx >= 0) {
+    kasState.payments[idx] = { ...kasState.payments[idx], ...data };
+    saveKasState();
   }
+}
 
-  const all = getLocalPayments();
-  return all.find((p) => p.student_id === studentId && p.week_id === weekId) || null;
+async function toggleWeekPayment(studentId, weekId, amount = 5000) {
+  loadKasState();
+  const existingIdx = kasState.payments.findIndex((p) => p.student_id === studentId && p.week_id === weekId);
+
+  if (existingIdx >= 0) {
+    const deletedId = kasState.payments[existingIdx].id;
+    kasState.payments.splice(existingIdx, 1);
+    saveKasState();
+
+    if (db && deletedId) {
+      db.from("kas_payments").delete().eq("id", deletedId).then(() => {}).catch(() => {});
+    }
+    return { paid: false, payment: null };
+  } else {
+    const newPayment = {
+      id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      student_id: studentId,
+      week_id: weekId,
+      amount: Number(amount) || 5000,
+      paid_at: new Date().toISOString(),
+      recorded_by: "bendahara"
+    };
+    kasState.payments.push(newPayment);
+    saveKasState();
+
+    if (db) {
+      db.from("kas_payments")
+        .insert({
+          student_id: studentId,
+          week_id: weekId,
+          amount: Number(amount) || 5000,
+          recorded_by: "bendahara"
+        })
+        .then(() => {})
+        .catch(() => {});
+    }
+    return { paid: true, payment: newPayment };
+  }
 }
 
 // ============================================================
-// KAS_EXPENSES
+// EXPENSES & CALCULATIONS
 // ============================================================
 async function fetchExpenses() {
-  try {
-    const { data, error } = await db
-      .from("kas_expenses")
-      .select("*")
-      .order("expense_date", { ascending: false });
-    if (error) throw error;
-    return data || [];
-  } catch {
-    return [];
-  }
+  loadKasState();
+  return kasState.expenses;
 }
 
 async function insertExpense(data) {
-  try {
-    await db.from("kas_expenses").insert(data);
-  } catch (err) {
-    console.warn(err);
-  }
+  loadKasState();
+  kasState.expenses.push({
+    id: `e-${Date.now()}`,
+    amount: Number(data.amount) || 0,
+    description: data.description || "",
+    expense_date: data.expense_date || new Date().toISOString().split("T")[0],
+    recorded_by: data.recorded_by || "bendahara"
+  });
+  saveKasState();
 }
 
 async function updateExpense(id, data) {
-  try {
-    await db.from("kas_expenses").update(data).eq("id", id);
-  } catch (err) {
-    console.warn(err);
+  loadKasState();
+  const idx = kasState.expenses.findIndex((e) => e.id === id);
+  if (idx >= 0) {
+    kasState.expenses[idx] = { ...kasState.expenses[idx], ...data };
+    saveKasState();
   }
 }
 
 async function deleteExpense(id) {
-  try {
-    await db.from("kas_expenses").delete().eq("id", id);
-  } catch (err) {
-    console.warn(err);
-  }
+  loadKasState();
+  kasState.expenses = kasState.expenses.filter((e) => e.id !== id);
+  saveKasState();
 }
 
-// ============================================================
-// KAS_ROLES
-// ============================================================
 async function isBendahara() {
-  try {
-    const { data: session } = await db.auth.getSession();
-    if (!session?.session) return false;
-    const email = session.session.user?.email;
-    if (!email) return false;
-
-    const { data, error } = await db
-      .from("kas_roles")
-      .select("role")
-      .eq("user_email", email)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data?.role === "bendahara" || email.includes("bendahara") || email.includes("admin");
-  } catch {
-    return false;
-  }
+  return true;
 }
 
-// ============================================================
-// KAS CALCULATIONS
-// ============================================================
 async function getKasSummary() {
-  const allPayments = await fetchAllPayments();
-  const expenses = await fetchExpenses();
-
-  const totalIncome = allPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-  const totalExpense = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  loadKasState();
+  const totalIncome = kasState.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const totalExpense = kasState.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   
-  // Realtime balance: Base snapshot (Rp 840.000) + difference in collected payments - expenses
-  const balance = BASE_PHYSICAL_BALANCE + (totalIncome - INITIAL_RECORDED_PAYMENTS) - totalExpense;
+  const balance = kasState.baseBalance + (totalIncome - INITIAL_RECORDED_PAYMENTS) - totalExpense;
 
   return { totalIncome, totalExpense, balance };
 }
 
 async function getTotalOutstanding() {
-  const studentsList = await fetchStudents();
-  const weeksList = await fetchKasWeeks();
-  const paymentsList = await fetchAllPayments();
-
-  // Target deadline per September Minggu ke-4 (10 minggu @ Rp 5.000 = Rp 50.000 per siswa)
+  loadKasState();
   const today = new Date();
-  const targetWeeks = weeksList.filter((w) => new Date(w.start_date) <= today);
+  const targetWeeks = kasState.weeks.filter((w) => new Date(w.start_date) <= today);
   const targetPerStudent = targetWeeks.reduce((sum, w) => sum + (Number(w.amount) || 5000), 0);
-  const totalTarget = studentsList.length * targetPerStudent;
+  const totalTarget = kasState.students.length * targetPerStudent;
 
-  const totalPaid = paymentsList.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const totalPaid = kasState.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const outstanding = Math.max(0, totalTarget - totalPaid);
 
   return outstanding;
-}
-
-async function toggleWeekPayment(studentId, weekId, amount = 5000) {
-  const existing = await getStudentPaymentStatus(studentId, weekId);
-  if (existing) {
-    await deletePayment(existing.id, studentId, weekId);
-    return { paid: false, payment: null };
-  } else {
-    const paymentData = {
-      student_id: studentId,
-      week_id: weekId,
-      amount: Number(amount) || 5000,
-      recorded_by: "bendahara"
-    };
-    await insertPayment(paymentData);
-    return { paid: true, payment: paymentData };
-  }
 }
 
 export {
@@ -484,4 +420,6 @@ export {
   isBendahara,
   getKasSummary,
   getTotalOutstanding,
+  loadKasState,
+  saveKasState
 };
