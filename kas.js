@@ -128,13 +128,15 @@ function createDefaultPayments() {
 }
 
 const LOCAL_STORAGE_KEY_PAYMENTS = "sekretaris9scp2-kas-payments-v1";
-const TOTAL_PHYSICAL_BALANCE = 840000;
+const INITIAL_RECORDED_PAYMENTS = 785000;
+const BASE_PHYSICAL_BALANCE = 840000;
 
 function getLocalPayments() {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY_PAYMENTS);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
     } catch {
       // fallback
     }
@@ -192,7 +194,6 @@ async function getCurrentWeek() {
     if (error || !data) throw error || new Error("No current week");
     return data;
   } catch {
-    // Current week is September 2026 Week 4 (2026-09-21 to 2026-09-27)
     return (
       DEFAULT_WEEKS.find((w) => w.start_date <= today && w.end_date >= today) ||
       DEFAULT_WEEKS.find((w) => w.id === "w-sep-4") ||
@@ -251,6 +252,8 @@ async function fetchPaymentsByStudent(studentId) {
         id: p.id,
         amount: p.amount,
         paid_at: p.paid_at,
+        week_id: p.week_id,
+        student_id: p.student_id,
         week
       };
     });
@@ -288,16 +291,19 @@ async function insertPayment(data) {
 
   // Always persist locally
   const current = getLocalPayments();
-  const newPayment = {
-    id: `p-${Date.now()}`,
-    student_id: data.student_id,
-    week_id: data.week_id,
-    amount: data.amount || 5000,
-    paid_at: new Date().toISOString(),
-    recorded_by: data.recorded_by || "bendahara"
-  };
-  current.push(newPayment);
-  saveLocalPayments(current);
+  const exists = current.some((p) => p.student_id === data.student_id && p.week_id === data.week_id);
+  if (!exists) {
+    const newPayment = {
+      id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      student_id: data.student_id,
+      week_id: data.week_id,
+      amount: Number(data.amount) || 5000,
+      paid_at: new Date().toISOString(),
+      recorded_by: data.recorded_by || "bendahara"
+    };
+    current.push(newPayment);
+    saveLocalPayments(current);
+  }
 }
 
 async function updatePayment(id, data) {
@@ -308,13 +314,22 @@ async function updatePayment(id, data) {
   }
 }
 
-async function deletePayment(id) {
+async function deletePayment(id, studentId = null, weekId = null) {
   try {
-    await db.from("kas_payments").delete().eq("id", id);
+    if (id) {
+      await db.from("kas_payments").delete().eq("id", id);
+    } else if (studentId && weekId) {
+      await db.from("kas_payments").delete().eq("student_id", studentId).eq("week_id", weekId);
+    }
   } catch (err) {
-    console.warn(err);
+    console.warn("Supabase delete skipped:", err);
   }
-  const current = getLocalPayments().filter((p) => p.id !== id);
+
+  const current = getLocalPayments().filter((p) => {
+    if (id && p.id === id) return false;
+    if (studentId && weekId && p.student_id === studentId && p.week_id === weekId) return false;
+    return true;
+  });
   saveLocalPayments(current);
 }
 
@@ -409,8 +424,8 @@ async function getKasSummary() {
   const totalIncome = allPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const totalExpense = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   
-  // Saldo kas saat ini: Rp 840.000 (total saldo fisik kas yang dilaporkan)
-  const balance = TOTAL_PHYSICAL_BALANCE > 0 ? TOTAL_PHYSICAL_BALANCE : (totalIncome - totalExpense);
+  // Realtime balance: Base snapshot (Rp 840.000) + difference in collected payments - expenses
+  const balance = BASE_PHYSICAL_BALANCE + (totalIncome - INITIAL_RECORDED_PAYMENTS) - totalExpense;
 
   return { totalIncome, totalExpense, balance };
 }
@@ -420,7 +435,7 @@ async function getTotalOutstanding() {
   const weeksList = await fetchKasWeeks();
   const paymentsList = await fetchAllPayments();
 
-  // Target deadline per September Minggu ke-4 (10 minggu @ Rp 5.000)
+  // Target deadline per September Minggu ke-4 (10 minggu @ Rp 5.000 = Rp 50.000 per siswa)
   const today = new Date();
   const targetWeeks = weeksList.filter((w) => new Date(w.start_date) <= today);
   const targetPerStudent = targetWeeks.reduce((sum, w) => sum + (Number(w.amount) || 5000), 0);
@@ -435,13 +450,13 @@ async function getTotalOutstanding() {
 async function toggleWeekPayment(studentId, weekId, amount = 5000) {
   const existing = await getStudentPaymentStatus(studentId, weekId);
   if (existing) {
-    await deletePayment(existing.id);
+    await deletePayment(existing.id, studentId, weekId);
     return { paid: false, payment: null };
   } else {
     const paymentData = {
       student_id: studentId,
       week_id: weekId,
-      amount: amount || 5000,
+      amount: Number(amount) || 5000,
       recorded_by: "bendahara"
     };
     await insertPayment(paymentData);

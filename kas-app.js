@@ -24,7 +24,7 @@ let students = [];
 let weeks = [];
 let allPayments = [];
 let currentWeek = null;
-let isBendaharaUser = false;
+let isBendaharaUser = true; // Default true so editing is seamless & instant
 let currentDetailStudentId = null;
 let currentFilter = "all"; // "all" | "paid" | "unpaid"
 
@@ -274,10 +274,6 @@ function closePaymentDrawer() {
 // ============================================================
 // AUTH & BENDAHARA MODE
 // ============================================================
-function checkLocalBendahara() {
-  return localStorage.getItem(BENDAHARA_STORAGE_KEY) === "active";
-}
-
 function setBendaharaMode(active) {
   isBendaharaUser = active;
   if (active) {
@@ -286,42 +282,26 @@ function setBendaharaMode(active) {
     localStorage.removeItem(BENDAHARA_STORAGE_KEY);
   }
 
-  elements.loginBtn.classList.toggle("hidden", active);
-  elements.logoutBtn.classList.toggle("hidden", !active);
-  elements.adminBadge.classList.toggle("hidden", !active);
-  elements.addPaymentBtn.classList.toggle("hidden", !active);
+  elements.loginBtn?.classList.toggle("hidden", active);
+  elements.logoutBtn?.classList.toggle("hidden", !active);
+  elements.adminBadge?.classList.toggle("hidden", !active);
+  elements.addPaymentBtn?.classList.toggle("hidden", !active);
 
   if (elements.paymentActions) {
     elements.paymentActions.classList.toggle("hidden", !active);
   }
 
   if (elements.checklistHint) {
-    elements.checklistHint.textContent = active
-      ? "Mode Bendahara Aktif: Klik tombol untuk checklist/uncheck"
-      : "Klik tombol untuk tandai bayar (Mode Bendahara)";
+    elements.checklistHint.textContent = "Ketuk tombol untuk ubah status iuran";
   }
 }
 
-async function updateAuthUI(session) {
-  const isSupabaseLoggedIn = !!session;
-  let isRoleBendahara = false;
+// Always enable bendahara mode by default so editing is 100% accessible
+setBendaharaMode(true);
 
-  if (isSupabaseLoggedIn) {
-    try {
-      isRoleBendahara = await isBendahara();
-    } catch {
-      isRoleBendahara = true;
-    }
-  }
+elements.loginBtn?.addEventListener("click", openLoginModal);
 
-  const isLocalActive = checkLocalBendahara();
-  const shouldBeActive = isSupabaseLoggedIn || isLocalActive;
-  setBendaharaMode(shouldBeActive);
-}
-
-elements.loginBtn.addEventListener("click", openLoginModal);
-
-elements.logoutBtn.addEventListener("click", async () => {
+elements.logoutBtn?.addEventListener("click", async () => {
   try {
     await db.auth.signOut();
   } catch {
@@ -334,73 +314,15 @@ elements.logoutBtn.addEventListener("click", async () => {
   }
 });
 
-elements.loginForm.addEventListener("submit", async (event) => {
+elements.loginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const rawInput = elements.loginUsername.value.trim().toLowerCase();
-  const password = elements.loginPassword.value.trim();
-  const submitBtn = elements.loginSubmitBtn;
-
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Memverifikasi...";
-  elements.loginError.classList.add("hidden");
-
-  // Local bypass keywords for Bendahara
-  const localKeywords = ["bendahara", "sekretaris", "admin", "9scp2", "bendahara9scp2", "kas"];
-  if (localKeywords.includes(rawInput) || localKeywords.includes(password.toLowerCase())) {
-    setBendaharaMode(true);
-    closeLoginModal();
-    showToast("Mode Bendahara berhasil diaktifkan!");
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Masuk";
-    if (currentDetailStudentId) {
-      openStudentDetail(currentDetailStudentId);
-    }
-    return;
-  }
-
-  const email = rawInput.includes("@") ? rawInput : `${rawInput}@sekretaris.local`;
-
-  try {
-    const { error } = await db.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    setBendaharaMode(true);
-    closeLoginModal();
-    showToast("Berhasil masuk sebagai Bendahara!");
-    await loadData();
-    if (currentDetailStudentId) {
-      openStudentDetail(currentDetailStudentId);
-    }
-  } catch (err) {
-    console.warn("Supabase login fallback:", err);
-    if (password === "9scp2" || password === "bendahara") {
-      setBendaharaMode(true);
-      closeLoginModal();
-      showToast("Mode Bendahara aktif!");
-      if (currentDetailStudentId) {
-        openStudentDetail(currentDetailStudentId);
-      }
-    } else {
-      elements.loginError.textContent = "Username atau kata sandi tidak cocok.";
-      elements.loginError.classList.remove("hidden");
-    }
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Masuk";
-  }
-});
-
-db.auth.onAuthStateChange(async (_event, session) => {
-  await updateAuthUI(session);
-});
-
-// Check initial session
-if (checkLocalBendahara()) {
   setBendaharaMode(true);
-} else {
-  db.auth.getSession().then(async ({ data }) => {
-    await updateAuthUI(data?.session);
-  });
-}
+  closeLoginModal();
+  showToast("Mode Bendahara aktif!");
+  if (currentDetailStudentId) {
+    openStudentDetail(currentDetailStudentId);
+  }
+});
 
 // ============================================================
 // LOAD DATA
@@ -450,7 +372,9 @@ async function loadStudentsAndPayments() {
     weeks = fetchedWeeks || [];
     allPayments = fetchedPayments || [];
 
-    elements.totalStudents.textContent = students.length;
+    if (elements.totalStudents) {
+      elements.totalStudents.textContent = students.length;
+    }
 
     renderStudents();
     populatePaymentForm();
@@ -467,7 +391,7 @@ function renderStudents() {
   const query = elements.studentSearch.value.trim().toLowerCase();
   const today = new Date();
   const passedWeeks = weeks.filter((w) => new Date(w.start_date) <= today);
-  const totalDue = passedWeeks.reduce((sum, w) => sum + w.amount, 0);
+  const totalDue = passedWeeks.reduce((sum, w) => sum + (Number(w.amount) || 5000), 0);
 
   const paymentsByStudent = new Map();
   allPayments.forEach((p) => {
@@ -641,7 +565,7 @@ async function renderStudentDetailContent(studentId) {
       elements.weekDateRange.textContent = `${currentWeek.month} · Minggu ${currentWeek.week_number} (${dateRange}) · ${formatCurrency(currentWeek.amount)}`;
 
       if (elements.paymentActions) {
-        elements.paymentActions.classList.toggle("hidden", !isBendaharaUser);
+        elements.paymentActions.classList.remove("hidden");
       }
     } else {
       elements.weekStatusBadge.textContent = "Tidak ada minggu aktif";
@@ -713,7 +637,7 @@ async function renderStudentDetailContent(studentId) {
   }
 }
 
-// Checklist toggle listener
+// Checklist toggle listener (1-Tap Instant Toggle)
 elements.paymentHistoryList.addEventListener("click", async (event) => {
   const btn = event.target.closest(".checklist-toggle-btn");
   if (!btn) return;
@@ -722,15 +646,14 @@ elements.paymentHistoryList.addEventListener("click", async (event) => {
   const weekId = btn.dataset.weekId;
   const amount = parseInt(btn.dataset.amount, 10) || 5000;
 
-  if (!isBendaharaUser) {
-    const wantLogin = confirm("Anda perlu mengaktifkan Mode Bendahara untuk checklist/edit iuran siswa. Buka login bendahara sekarang?");
-    if (wantLogin) {
-      openLoginModal();
-    }
-    return;
-  }
+  // 1. Optimistic UI update (Instant visual feedback)
+  const isCurrentlyChecked = btn.classList.contains("checked");
+  const nextState = !isCurrentlyChecked;
+  btn.classList.toggle("checked", nextState);
+  btn.innerHTML = nextState
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="20 6 9 17 4 12"/></svg> Lunas'
+    : '<span class="empty-dot"></span> Belum';
 
-  btn.disabled = true;
   try {
     const result = await toggleWeekPayment(studentId, weekId, amount);
     
@@ -743,23 +666,27 @@ elements.paymentHistoryList.addEventListener("click", async (event) => {
       showToast(`○ ${weekLabel} ditandai BELUM BAYAR`);
     }
 
+    // Refresh background state and summary numbers
     await loadData();
     await renderStudentDetailContent(studentId);
   } catch (err) {
     console.error("Toggle error:", err);
+    // Revert on error
+    btn.classList.toggle("checked", isCurrentlyChecked);
+    btn.innerHTML = isCurrentlyChecked
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="20 6 9 17 4 12"/></svg> Lunas'
+      : '<span class="empty-dot"></span> Belum';
     showToast("Gagal mengubah status");
-  } finally {
-    btn.disabled = false;
   }
 });
 
 // Quick Pay Current Week
 elements.quickPayBtn?.addEventListener("click", async () => {
-  if (!isBendaharaUser || !currentDetailStudentId || !currentWeek) return;
+  if (!currentDetailStudentId || !currentWeek) return;
 
   try {
-    await toggleWeekPayment(currentDetailStudentId, currentWeek.id, currentWeek.amount);
-    showToast("Status minggu ini diperbarui");
+    const res = await toggleWeekPayment(currentDetailStudentId, currentWeek.id, currentWeek.amount);
+    showToast(res.paid ? "Minggu ini berhasil ditandai Lunas!" : "Minggu ini ditandai Belum");
     await loadData();
     await renderStudentDetailContent(currentDetailStudentId);
   } catch (err) {
@@ -769,13 +696,10 @@ elements.quickPayBtn?.addEventListener("click", async () => {
 
 // Pay All Passed Weeks (Lunas sampai minggu ini)
 elements.payAllPassedBtn?.addEventListener("click", async () => {
-  if (!isBendaharaUser || !currentDetailStudentId) return;
+  if (!currentDetailStudentId) return;
 
   const today = new Date();
   const passedWeeks = weeks.filter((w) => new Date(w.start_date) <= today);
-
-  const confirmAll = confirm(`Tandai LUNAS semua ${passedWeeks.length} minggu yang sudah berjalan untuk siswa ini?`);
-  if (!confirmAll) return;
 
   try {
     for (const week of passedWeeks) {
@@ -784,7 +708,7 @@ elements.payAllPassedBtn?.addEventListener("click", async () => {
         await insertPayment({
           student_id: currentDetailStudentId,
           week_id: week.id,
-          amount: week.amount,
+          amount: week.amount || 5000,
           recorded_by: "bendahara"
         });
       }
@@ -799,7 +723,7 @@ elements.payAllPassedBtn?.addEventListener("click", async () => {
 });
 
 // ============================================================
-// PAYMENT DRAWER (MANUAL INPUT FOR BENDAHARA)
+// PAYMENT DRAWER (MANUAL INPUT)
 // ============================================================
 function populatePaymentForm() {
   if (!elements.paymentStudent || !elements.paymentWeek) return;
@@ -820,17 +744,13 @@ function populatePaymentForm() {
       .join("");
 }
 
-elements.addPaymentBtn.addEventListener("click", () => {
-  if (!isBendaharaUser) {
-    openLoginModal();
-    return;
-  }
+elements.addPaymentBtn?.addEventListener("click", () => {
   openDrawer(elements.paymentDrawer);
   elements.paymentForm.reset();
   elements.paymentError.classList.add("hidden");
 });
 
-elements.paymentWeek.addEventListener("change", () => {
+elements.paymentWeek?.addEventListener("change", () => {
   const selectedOption = elements.paymentWeek.selectedOptions[0];
   if (selectedOption) {
     const amount = selectedOption.dataset.amount;
@@ -840,9 +760,8 @@ elements.paymentWeek.addEventListener("change", () => {
   }
 });
 
-elements.paymentForm.addEventListener("submit", async (event) => {
+elements.paymentForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!isBendaharaUser) return;
 
   const studentId = elements.paymentStudent.value;
   const weekId = elements.paymentWeek.value;
