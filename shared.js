@@ -54,6 +54,7 @@ export const MONTH_NAMES = [
 ];
 
 export const COMPLETED_TASKS_KEY = "sekretaris9scp2-completed-tasks";
+export const TASKS_STORAGE_KEY = "sekretaris9scp2-tasks-list";
 
 export function getCompletedTaskIds() {
   try {
@@ -312,18 +313,18 @@ export function setupNavigation(activePage = "home") {
   if (!headerContainer) return;
 
   const navItems = [
-    { key: "home", label: "Home", href: "/index.html", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>` },
-    { key: "daily-info", label: "Daily Info", href: "/daily-info.html", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>` },
-    { key: "tugas", label: "Tugas", href: "/tugas.html", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>` },
-    { key: "piket", label: "Piket", href: "/piket.html", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>` },
-    { key: "pengumuman", label: "Pengumuman", href: "/pengumuman.html", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>` },
-    { key: "anggota", label: "Anggota", href: "/anggota.html", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>` },
-    { key: "kas-kelas", label: "Kas Kelas", href: "/kas-kelas.html", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><circle cx="18" cy="12" r="2"></circle></svg>` },
+    { key: "home", label: "Home", href: "/", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>` },
+    { key: "daily-info", label: "Daily Info", href: "/daily-info", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>` },
+    { key: "tugas", label: "Tugas", href: "/tugas", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>` },
+    { key: "piket", label: "Piket", href: "/piket", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>` },
+    { key: "pengumuman", label: "Pengumuman", href: "/pengumuman", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>` },
+    { key: "anggota", label: "Anggota", href: "/anggota", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>` },
+    { key: "kas-kelas", label: "Kas Kelas", href: "/kas-kelas", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><circle cx="18" cy="12" r="2"></circle></svg>` },
   ];
 
   headerContainer.innerHTML = `
     <div class="header-container">
-      <a href="/index.html" class="brand-group" aria-label="Web Kelas 9 SCP 2">
+      <a href="/" class="brand-group" aria-label="Web Kelas 9 SCP 2">
         <span class="brand-badge">9 SCP 2</span>
         <span class="brand-title">Class Space</span>
       </a>

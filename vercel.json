@@ -2,15 +2,16 @@
   "buildCommand": "node build.js",
   "outputDirectory": ".",
   "framework": null,
-  "routes": [
-    { "src": "/daily-info", "dest": "/daily-info.html" },
-    { "src": "/info", "dest": "/daily-info.html" },
-    { "src": "/tugas", "dest": "/tugas.html" },
-    { "src": "/piket", "dest": "/piket.html" },
-    { "src": "/pengumuman", "dest": "/pengumuman.html" },
-    { "src": "/anggota", "dest": "/anggota.html" },
-    { "src": "/kas-kelas", "dest": "/kas-kelas.html" },
-    { "src": "/home", "dest": "/index.html" },
-    { "src": "/", "dest": "/index.html" }
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/daily-info", "destination": "/daily-info.html" },
+    { "source": "/info", "destination": "/daily-info.html" },
+    { "source": "/tugas", "destination": "/tugas.html" },
+    { "source": "/piket", "destination": "/piket.html" },
+    { "source": "/pengumuman", "destination": "/pengumuman.html" },
+    { "source": "/anggota", "destination": "/anggota.html" },
+    { "source": "/kas-kelas", "destination": "/kas-kelas.html" },
+    { "source": "/home", "destination": "/index.html" },
+    { "source": "/", "destination": "/index.html" }
   ]
 }

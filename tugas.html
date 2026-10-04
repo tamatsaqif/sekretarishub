@@ -128,6 +128,7 @@
         initGridPulse,
         setupNavigation,
         COMPLETED_TASKS_KEY,
+        TASKS_STORAGE_KEY,
         getCompletedTaskIds
       } from "./shared.js";
       import { fetchTasks, insertTask, updateTask, deleteTask } from "./supabase.js";
@@ -362,7 +363,7 @@
       async function loadData() {
         try {
           const t = await fetchTasks();
-          if (t && Array.isArray(t) && t.length > 0) {
+          if (Array.isArray(t)) {
             tasks = t;
             saveLocalTasks();
           }
