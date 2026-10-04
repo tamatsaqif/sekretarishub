@@ -1,402 +1,94 @@
-# Website Rebuild Structure
+# Science2Hub — Homepage Redesign
 
-## Objective
+## Context
 
-Rebuild the existing class website using the structure defined in this document.
+Homepage Science2Hub saat ini sudah memiliki functionality yang bagus, tetapi terlalu banyak informasi ditampilkan sekaligus.
 
-The existing database and existing data must be preserved and reused.
+Saat ini homepage berisi:
 
-The goal is to reorganize the website into a simpler, cleaner, more intuitive class-information experience without unnecessarily rebuilding or destroying the existing backend.
+* Welcome section
+* 6 menu cards
+* Sekilas Hari Ini
+* Mata pelajaran hari ini
+* Piket
+* Tugas aktif
+* berbagai informasi tambahan
 
----
+Hasilnya terasa seperti **admin dashboard yang padat**.
 
-# 1. Critical Database Rule
+Saya ingin mengubah homepage menjadi **modern class workspace / landing page**, terinspirasi dari struktur visual website Canva pada reference image.
 
-## DO NOT destroy existing data
+### IMPORTANT
 
-Before making changes:
+Jangan mengubah database, business logic, authentication, atau halaman internal.
 
-1. Inspect the existing project structure.
-2. Inspect the existing database schema.
-3. Inspect existing tables, relationships, queries, and data.
-4. Identify which existing data can be reused for the new structure.
-5. Preserve existing records whenever possible.
-6. Do not reset, drop, truncate, or recreate the database just to fit the new UI.
+Fokus utama task ini adalah:
 
-### Important
-
-The existing database is the source of truth.
-
-Adapt the frontend and application architecture around the existing data where practical.
-
-Only modify the database schema when it is genuinely necessary.
-
-Never delete existing production data without explicit instruction.
+**REDESIGN HOMEPAGE / DASHBOARD SAJA.**
 
 ---
 
-# 2. Main Website Structure
+# 1. Masalah Homepage Saat Ini
 
-The entire website should follow this structure:
+Homepage sekarang secara visual:
 
 ```text
-🏠 Home
-├── 📅 Daily Info
-│   ├── Mata Pelajaran
-│   ├── Jadwal Hari Ini
-│   └── Catatan Hari Ini
-│
-├── 📚 Tugas
-│   ├── Belum Dikumpulkan
-│   ├── Sudah Dikumpulkan
-│   └── Deadline
-│
-├── 🧹 Piket
-│   ├── Piket Hari Ini
-│   └── Jadwal Piket
-│
-├── 📢 Pengumuman
-│   ├── Pengumuman Terbaru
-│   └── Arsip
-│
-├── 👥 Anggota
-│   └── Daftar Siswa
-│
-└── 💰 Kas Kelas
-    ├── Total Kas
-    ├── Status Pembayaran
-    └── Detail Siswa
+Navbar
+
+Welcome
+↓
+6 cards
+↓
+Sekilas Hari Ini
+↓
+Mata Pelajaran
+↓
+Piket
+↓
+Tugas
 ```
 
-This structure is the source of truth for the frontend information architecture.
+Terlalu banyak informasi ditampilkan pada satu halaman.
 
-Do not add unrelated sections.
+Homepage seharusnya bukan tempat untuk menampilkan semua detail.
 
----
+Homepage harus menjadi:
 
-# 3. Home
+> **pintu masuk menuju seluruh fitur Science2Hub.**
 
-## Purpose
-
-Home is the main landing page and summary of the class.
-
-It should provide quick access to the most important information without becoming a complicated dashboard.
-
-### Home should prioritize:
-
-* Class identity
-* Current date
-* Today's most important information
-* Quick access to Daily Info
-* Quick access to Tugas
-* Quick access to Piket
-* Quick access to Pengumuman
-* Quick access to Anggota
-* Quick access to Kas Kelas
-
-### Home should NOT become:
-
-* Analytics dashboard
-* Statistics-heavy dashboard
-* Generic SaaS dashboard
-* Feature showcase
-* Marketing landing page
-
-Use the existing database data wherever possible.
+Detail tetap berada di halaman masing-masing.
 
 ---
 
-# 4. Daily Info
+# 2. New Homepage Structure
 
-## Purpose
-
-Daily Info is the primary place for information about the current school day.
+Ubah menjadi:
 
 ```text
-📅 Daily Info
-├── Mata Pelajaran
-├── Jadwal Hari Ini
-└── Catatan Hari Ini
-```
-
-### Mata Pelajaran
-
-Display the subjects relevant to the selected/current day.
-
-Possible existing database fields may include:
-
-* Subject name
-* Teacher
-* Time
-* Additional information
-
-Use only fields that already exist or are explicitly required.
-
-### Jadwal Hari Ini
-
-Display today's schedule clearly.
-
-The user should immediately understand:
-
-* What subject comes next
-* What time it occurs
-* What the current day's schedule looks like
-
-### Catatan Hari Ini
-
-Display important notes for the selected day.
-
-Examples:
-
-* Bring sports equipment
-* Classroom activity
-* Special instruction
-* Important reminder
-
-Do not invent notes.
-
----
-
-# 5. Tugas
-
-## Purpose
-
-Tugas is the central assignment area.
-
-```text
-📚 Tugas
-├── Belum Dikumpulkan
-├── Sudah Dikumpulkan
-└── Deadline
-```
-
-### Belum Dikumpulkan
-
-Show assignments that still require action.
-
-Prioritize:
-
-* Assignment name
-* Subject
-* Deadline
-* Relevant note
-
-### Sudah Dikumpulkan
-
-Show completed/submitted assignments.
-
-Keep the presentation simple.
-
-### Deadline
-
-Make upcoming deadlines easy to scan.
-
-The deadline should have strong visual hierarchy but remain consistent with the monochrome design system.
-
-Do not introduce aggressive colors just to indicate urgency.
-
----
-
-# 6. Piket
-
-## Purpose
-
-Show the class duty schedule.
-
-```text
-🧹 Piket
-├── Piket Hari Ini
-└── Jadwal Piket
-```
-
-### Piket Hari Ini
-
-The first thing the user should see is who is responsible for today's duty.
-
-### Jadwal Piket
-
-Display the complete schedule.
-
-The schedule should be easy to scan on mobile.
-
-Do not add unnecessary statistics such as:
-
-* Attendance percentage
-* Duty completion percentage
-* Student rankings
-
----
-
-# 7. Pengumuman
-
-## Purpose
-
-Provide a central place for class announcements.
-
-```text
-📢 Pengumuman
-├── Pengumuman Terbaru
-└── Arsip
-```
-
-### Pengumuman Terbaru
-
-Display the newest announcements first.
-
-Prioritize:
-
-* Title
-* Date
-* Content
-* Relevant metadata
-
-### Arsip
-
-Older announcements should remain accessible without overwhelming the main page.
-
-Keep the archive simple.
-
----
-
-# 8. Anggota
-
-## Purpose
-
-Display the students in the class.
-
-```text
-👥 Anggota
-└── Daftar Siswa
-```
-
-### Daftar Siswa
-
-Display the students clearly.
-
-Possible existing database fields:
-
-* Student name
-* Student number
-* Additional class-related information
-
-Only display information that is actually available and appropriate.
-
-Do not invent student data.
-
-Do not add unnecessary student analytics.
-
----
-
-# 9. Kas Kelas
-
-## Purpose
-
-Display class financial information in a transparent and easy-to-understand way.
-
-```text
-💰 Kas Kelas
-├── Total Kas
-├── Status Pembayaran
-└── Detail Siswa
-```
-
-### Total Kas
-
-Display the current class cash total using the existing database data.
-
-This should be easy to find but should not visually dominate the entire website.
-
-### Status Pembayaran
-
-Show each student's payment status.
-
-The interface should make it easy to understand:
-
-* Who has paid
-* Who has not fully paid
-* Remaining amount, when available
-
-Reuse existing payment data from the database.
-
-### Detail Siswa
-
-Allow the user to view a student's payment details.
-
-Possible information:
-
-* Student name
-* Payment history
-* Paid amount
-* Remaining amount
-* Relevant payment period
-
-Only use data already available in the database.
-
----
-
-# 10. Data Mapping
-
-Before implementation, map the existing database into the new information architecture.
-
-Conceptually:
-
-```text
-Existing Database
+NAVBAR
         ↓
-Data Mapping Layer
+HERO
         ↓
-New Website Structure
+FEATURE / MENU GRID
         ↓
-New UI
+SMALL TODAY SUMMARY
+        ↓
+FOOTER
 ```
 
-Do not duplicate data unnecessarily.
-
-Example:
-
-```text
-Existing assignments table
-        ↓
-        ├── Home preview
-        └── Tugas page
-```
-
-The same source data should be reused across different pages.
+Jangan tampilkan seluruh detail tugas, piket, mata pelajaran, dan sebagainya di homepage.
 
 ---
 
-# 11. Existing Functionality
+# 3. Navbar
 
-When rebuilding:
+Pertahankan navbar existing karena sudah bagus secara struktur.
 
-* Preserve working functionality.
-* Preserve existing authentication where applicable.
-* Preserve existing database access.
-* Preserve existing permissions.
-* Preserve existing important business logic.
-* Preserve existing class data.
-
-The redesign should primarily improve:
-
-* Information architecture
-* UI
-* UX
-* Navigation
-* Visual hierarchy
-* Responsiveness
-* Consistency
-
-Do not rewrite working backend logic without a clear reason.
-
----
-
-# 12. Navigation
-
-The main navigation should reflect the new structure.
-
-Primary destinations:
+Current:
 
 ```text
+9 SCP 2  Class Space
+
 Home
 Daily Info
 Tugas
@@ -404,288 +96,641 @@ Piket
 Pengumuman
 Anggota
 Kas Kelas
+...
 ```
 
-Keep navigation simple.
+Pertahankan konsep tersebut.
 
-On mobile, use an appropriate compact navigation pattern.
+Namun sedikit polish:
 
-Do not add unrelated navigation items.
+* sticky
+* white / translucent
+* backdrop blur
+* subtle border
+* rounded navigation container
+* active state lebih jelas
+* jangan membuat navbar terlalu tinggi
+
+Tidak perlu membuat sidebar.
 
 ---
 
-# 13. Page Relationships
+# 4. HERO — Jadikan Fokus Utama
 
-The sections should feel like one connected website rather than separate mini-apps.
+Homepage harus dimulai dengan hero yang jauh lebih besar.
 
-Example:
+Current:
+
+```text
+9 SCP 2   SENIN
+
+Selamat Datang di 9 SCP 2
+
+Pusat informasi dan aktivitas kelas...
+```
+
+Ubah menjadi:
+
+```text
+9 SCP 2 • CLASS SPACE
+
+Semua informasi kelas,
+dalam satu tempat.
+
+Jadwal, tugas, piket, pengumuman,
+anggota, dan kas kelas.
+
+[ Buka Daily Info ]
+```
+
+Hero harus terasa seperti landing page.
+
+---
+
+# 5. Hero Visual
+
+Gunakan visual style yang terinspirasi reference Canva.
+
+Background hero:
+
+```text
+purple
+→ blue
+→ cyan
+```
+
+Tetapi tetap sesuai dengan branding Science2Hub.
+
+Contoh:
+
+```css
+background:
+  linear-gradient(
+    135deg,
+    #7c3aed 0%,
+    #4f46e5 45%,
+    #06b6d4 100%
+  );
+```
+
+Boleh dibuat lebih subtle agar tidak terlalu mencolok.
+
+Hero harus memiliki:
+
+* large typography
+* centered content
+* generous whitespace
+* rounded container
+* subtle decorative elements
+
+---
+
+# 6. Hero Typography
+
+Desktop:
+
+Main heading:
+
+```text
+font-size: clamp(48px, 6vw, 80px);
+font-weight: 650–700;
+line-height: 0.95–1.05;
+letter-spacing: -0.04em;
+```
+
+Contoh visual:
+
+```text
+              Semua informasi kelas,
+                  dalam satu tempat.
+```
+
+Jangan membuat heading terlalu panjang dalam satu baris.
+
+Gunakan max-width sekitar:
+
+```text
+800–950px
+```
+
+agar wrapping terlihat intentional.
+
+---
+
+# 7. Hero CTA
+
+Primary:
+
+```text
+Buka Daily Info →
+```
+
+Secondary:
+
+```text
+Lihat Kas Kelas
+```
+
+Primary button:
+
+* white background
+* dark text
+* rounded 14–16px
+* subtle shadow
+* hover lift
+
+Secondary:
+
+* transparent / glass
+* white border
+* white text
+
+Jangan membuat lebih dari 2 CTA.
+
+---
+
+# 8. Decorative Floating Cards
+
+Untuk membuat homepage terasa seperti reference Canva, tambahkan beberapa floating UI cards.
+
+Contoh:
+
+```text
+                         ┌──────────────┐
+                         │ 📅           │
+                         │ Daily Info   │
+                         │ Hari ini     │
+                         └──────────────┘
+
+
+      ┌──────────────┐
+      │ 📚 Tugas     │
+      │ 3 aktif      │
+      └──────────────┘
+
+
+                           ┌──────────────┐
+                           │ 💰 Kas Kelas │
+                           │ Terupdate    │
+                           └──────────────┘
+```
+
+Card harus mengambil data nyata jika memungkinkan.
+
+Jangan membuat fake data.
+
+Jika data tidak tersedia, gunakan dekorasi non-data seperti:
+
+```text
+📅
+✦
+9
+SCP
+2
+```
+
+Floating cards:
+
+```text
+border-radius: 20–24px
+backdrop-filter: blur(...)
+box-shadow: subtle
+```
+
+Boleh diberi sedikit rotation:
+
+```text
+-3deg
++2deg
+```
+
+Animation sangat subtle.
+
+---
+
+# 9. REMOVE THE CURRENT LARGE INFORMATION SECTION
+
+Hapus dari homepage:
+
+```text
+Sekilas Hari Ini
+```
+
+beserta detail:
+
+```text
+Mata Pelajaran Hari Ini
+Piket & Tugas Aktif
+```
+
+**Jangan hapus functionality atau data dari database.**
+
+Hanya pindahkan detail tersebut dari homepage.
+
+User tetap bisa melihatnya melalui:
+
+```text
+Daily Info
+Piket
+Tugas
+```
+
+Homepage tidak perlu menampilkan semuanya.
+
+---
+
+# 10. FEATURE SECTION
+
+Setelah hero:
+
+```text
+Apa yang ingin kamu buka?
+```
+
+Subtitle:
+
+```text
+Semua kebutuhan kelas 9 SCP 2 ada di sini.
+```
+
+Kemudian tampilkan menu utama.
+
+Jangan menggunakan 6 card identik seperti sekarang.
+
+Gunakan **bento grid**.
+
+---
+
+# 11. Bento Grid
+
+Target:
+
+```text
+┌───────────────────────────────┬──────────────────┐
+│                               │                  │
+│ 📅 Daily Info                 │ 📚 Tugas         │
+│                               │                  │
+│ Jadwal dan informasi hari ini │ Deadline & tugas │
+│                               │                  │
+├───────────────┬───────────────┴──────────────────┤
+│ 🧹 Piket      │ 📢 Pengumuman                    │
+│               │                                  │
+├───────────────┼──────────────────┬───────────────┤
+│ 👥 Anggota    │ 💰 Kas Kelas     │               │
+│               │                  │               │
+└───────────────┴──────────────────┴───────────────┘
+```
+
+Daily Info menjadi card terbesar karena merupakan fitur utama.
+
+---
+
+# 12. Card Style
+
+Card jangan terasa seperti:
+
+```text
+icon
+title
+description
+number
+```
+
+yang sekarang.
+
+Buat lebih editorial.
+
+Contoh:
+
+```text
+┌──────────────────────────────────────┐
+│ 📅                             →     │
+│                                      │
+│ Daily Info                           │
+│ Jadwal dan informasi hari ini.       │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+Hover:
+
+```text
+translateY(-4px)
+```
+
+Arrow:
+
+```text
+→
+```
+
+bergerak sedikit ke kanan.
+
+Transition:
+
+```text
+200–300ms
+```
+
+---
+
+# 13. Card Hierarchy
+
+Gunakan ukuran berbeda.
+
+### Daily Info
+
+Large:
+
+```text
+2 columns × 2 rows
+```
+
+### Tugas
+
+Medium.
+
+### Piket
+
+Medium.
+
+### Pengumuman
+
+Medium.
+
+### Anggota
+
+Small.
+
+### Kas Kelas
+
+Large / medium.
+
+Tujuannya supaya homepage tidak terlihat seperti:
+
+```text
+□ □ □
+□ □ □
+```
+
+seperti sekarang.
+
+---
+
+# 14. Icons
+
+Pertahankan icon system existing jika sudah konsisten.
+
+Jangan mengganti semua icon dengan emoji jika project sekarang menggunakan icon library.
+
+Prefer:
+
+```text
+Lucide / existing icon system
+```
+
+Emoji boleh digunakan hanya sebagai decorative element jika memang cocok.
+
+---
+
+# 15. Background
+
+Current homepage menggunakan grid background.
+
+Boleh dipertahankan secara sangat subtle, tetapi jangan membuatnya terlalu terlihat.
+
+Alternative:
+
+```text
+#FAFAFA
+```
+
+dengan:
+
+```text
+radial-gradient
+```
+
+yang sangat subtle.
+
+Hero boleh menjadi satu-satunya bagian yang memiliki gradient kuat.
+
+---
+
+# 16. Today Section — Jangan Hilangkan Sepenuhnya
+
+Informasi "hari ini" masih berguna.
+
+Tetapi ubah menjadi **small summary strip**, bukan section besar.
+
+Contoh:
+
+```text
+Hari ini · Senin, 4 Oktober
+
+4 pelajaran      3 tugas aktif      5 petugas piket
+```
+
+atau:
+
+```text
+┌─────────────────────────────────────────────────────┐
+│ Senin, 4 Oktober                                    │
+│                                                     │
+│ 4 Pelajaran    3 Tugas Aktif    Piket Hari Ini →   │
+└─────────────────────────────────────────────────────┘
+```
+
+Klik masing-masing → halaman detail.
+
+Jangan menampilkan seluruh isi tugas/piket di sini.
+
+---
+
+# 17. Information Architecture
+
+Homepage:
 
 ```text
 Home
- ├── → Daily Info
- ├── → Tugas
- ├── → Piket
- ├── → Pengumuman
- ├── → Anggota
- └── → Kas Kelas
+│
+├── Hero
+│
+├── Feature Navigation
+│   ├── Daily Info
+│   ├── Tugas
+│   ├── Piket
+│   ├── Pengumuman
+│   ├── Anggota
+│   └── Kas Kelas
+│
+└── Today Summary
 ```
 
-Each section should link naturally back to Home and to relevant related content when necessary.
+Detail:
 
-Do not create unnecessary nested navigation.
+```text
+Daily Info
+→ semua jadwal, mapel, absensi, catatan
 
----
+Tugas
+→ semua tugas dan deadline
 
-# 14. Shared Design System
+Piket
+→ jadwal piket lengkap
 
-All pages must use the rules defined in:
+Pengumuman
+→ semua announcement
 
-`design-direction.md`
+Anggota
+→ daftar siswa
 
-This includes:
-
-* Monochrome white/gray color system
-* SF Pro / system fallback typography
-* Rounded visual language
-* Consistent spacing
-* Subtle glassmorphism for buttons
-* Restrained shadows
-* Smooth animations
-* Clear hierarchy
-* Consistent components
-* Anti-AI-slop rules
-
-Do not create a separate visual style for individual pages.
+Kas Kelas
+→ detail pembayaran
+```
 
 ---
 
-# 15. Shared Components
+# 18. Do NOT Change Existing Functionality
 
-Create reusable components where appropriate.
+Tetap pertahankan:
 
-Examples:
+* Supabase
+* authentication
+* session
+* role
+* database
+* Daily Info
+* Tugas
+* Piket
+* Pengumuman
+* Anggota
+* Kas Kelas
+* CRUD
+* permissions
+* existing routes
+
+Jangan membuat ulang database.
+
+Jangan membuat dummy data.
+
+Jangan menghapus component yang masih digunakan oleh halaman lain.
+
+---
+
+# 19. Responsive
+
+Mobile harus menjadi prioritas.
+
+Mobile:
 
 ```text
 Navbar
-PageHeader
-SectionHeader
-DateSelector
-SubjectItem
-AssignmentItem
-DutyItem
-AnnouncementItem
-StudentItem
-PaymentItem
-GlassButton
-EmptyState
-LoadingState
+↓
+Hero
+↓
+CTA
+↓
+Feature cards
+↓
+Today summary
 ```
 
-Reuse the same component for the same purpose.
-
-Do not create visually different versions of the same component without a clear reason.
-
----
-
-# 16. Responsive Behavior
-
-The website must be mobile-first.
-
-Assume students primarily access the site through their phones.
-
-### Mobile requirements
-
-* No horizontal overflow
-* Comfortable touch targets
-* Clear typography
-* Easy navigation
-* Fast scanning
-* Consistent spacing
-* No cramped tables
-* Important information visible without excessive interaction
-
-Desktop should scale naturally from the mobile-first structure.
-
----
-
-# 17. Empty Data
-
-When a section has no data:
-
-Do not invent content.
-
-Use a minimal neutral state.
-
-Example:
+Hero typography sekitar:
 
 ```text
-Belum ada tugas.
+40–48px
 ```
 
-or:
+Cards:
 
 ```text
-Tidak ada pengumuman.
+1 column
 ```
 
-The empty state should not introduce unnecessary illustrations or decoration.
+atau 2-column untuk card kecil.
+
+Pastikan tidak ada horizontal overflow.
 
 ---
 
-# 18. Loading and Error States
+# 20. Overall Feeling
 
-Loading states should be subtle and consistent.
+Target akhirnya:
 
-Error states should be clear and useful.
-
-Do not create elaborate loading screens.
-
-Do not hide errors behind silent failures.
-
----
-
-# 19. Performance
-
-The rebuilt website should remain lightweight.
-
-Prioritize:
-
-* Fast initial load
-* Efficient database queries
-* Reused components
-* Minimal unnecessary JavaScript
-* Optimized images
-* No unnecessary dependencies
-
-Do not add a library just because it looks useful.
-
-Use existing project dependencies where possible.
-
----
-
-# 20. Implementation Process
-
-Before changing code:
-
-### Step 1 — Audit
-
-Inspect:
+### Current
 
 ```text
-Project structure
-Routes
-Components
-Database schema
-Database queries
-Authentication
-Existing functionality
-Existing styles
-Environment configuration
+Admin Dashboard
+↓
+Banyak informasi
+↓
+Banyak card
+↓
+Padat
 ```
 
-### Step 2 — Map
-
-Create a clear mapping:
+### New
 
 ```text
-Existing data
-      ↓
-Required feature
-      ↓
-Required page
-      ↓
-Reusable component
+Modern Class Workspace
+↓
+Hero besar
+↓
+Visual
+↓
+Simple navigation
+↓
+Bento cards
+↓
+Detail ada di halaman masing-masing
 ```
 
-### Step 3 — Rebuild
+Reference feeling:
 
-Refactor the frontend around the new structure.
+**Canva landing page**
 
-### Step 4 — Verify
+bukan:
 
-Check:
+**Canva clone**
 
-* Existing data still appears correctly
-* Database operations still work
-* No data was lost
-* Existing authentication still works
-* Every requested section works
-* Mobile layout works
-* Existing functionality has not been accidentally removed
+dan bukan:
 
-### Step 5 — Polish
-
-Apply `design-direction.md` consistently across every page.
+**generic school admin dashboard.**
 
 ---
 
-# 21. Strict Scope Rule
+# 21. Final Requirement
 
-The requested structure is:
+Sebelum coding, inspect implementation homepage yang sekarang.
 
-```text
-🏠 Home
-├── 📅 Daily Info
-│   ├── Mata Pelajaran
-│   ├── Jadwal Hari Ini
-│   └── Catatan Hari Ini
-│
-├── 📚 Tugas
-│   ├── Belum Dikumpulkan
-│   ├── Sudah Dikumpulkan
-│   └── Deadline
-│
-├── 🧹 Piket
-│   ├── Piket Hari Ini
-│   └── Jadwal Piket
-│
-├── 📢 Pengumuman
-│   ├── Pengumuman Terbaru
-│   └── Arsip
-│
-├── 👥 Anggota
-│   └── Daftar Siswa
-│
-└── 💰 Kas Kelas
-    ├── Total Kas
-    ├── Status Pembayaran
-    └── Detail Siswa
-```
+Jangan langsung rewrite.
 
-Do not add:
+Identifikasi:
 
-* Chat
-* AI assistant
-* Social feed
-* Leaderboards
-* Analytics
-* Extra dashboards
-* Extra pages
-* Extra navigation
-* Unrequested settings
-* Unrequested features
+* component homepage
+* navbar
+* card component
+* data fetching
+* route
+* styling
+* responsive behavior
 
-Do not remove any existing functionality that is required by the current system unless explicitly instructed.
+Kemudian lakukan redesign dengan prinsip:
 
----
+> **Preserve functionality, completely improve visual hierarchy.**
 
-# 22. Final Instruction
+Homepage harus terasa jauh lebih lega dibanding versi sekarang.
 
-Rebuild the existing website around this structure while preserving the existing database and functional behavior.
+Prioritas:
 
-The redesign should feel like **one coherent class website**, not a collection of unrelated pages.
+1. Reduce information density
+2. Bigger hero
+3. Strong visual hierarchy
+4. Bento navigation
+5. Better whitespace
+6. Smooth animation
+7. Responsive
+8. Preserve all existing functionality
 
-Priorities:
-
-1. Preserve existing data.
-2. Preserve working functionality.
-3. Follow the exact information architecture.
-4. Reuse existing backend/data whenever possible.
-5. Reuse components.
-6. Apply `design-direction.md`.
-7. Do not invent features.
-8. Do not add unnecessary UI.
-9. Keep the experience simple.
-10. Make the final result feel polished, intentional, and human-designed.
-
-When uncertain, **preserve existing functionality and choose the simpler implementation.**
+Jangan menambahkan fitur baru hanya demi memenuhi desain.

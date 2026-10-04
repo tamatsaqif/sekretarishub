@@ -683,7 +683,8 @@ function generateDailyInfo(mode = currentPreviewMode) {
 
   const subjects = state.schedule[targetKey] || [];
   const piket = state.piket[targetKey] || [];
-  const tasks = state.tasks;
+  const completedIds = new Set(JSON.parse(localStorage.getItem("sekretaris9scp2-completed-tasks") || "[]"));
+  const tasks = (state.tasks || []).filter((task) => !completedIds.has(task.id));
   const note = state.notes.trim() || "Kalau ada yang kurang atau salah bisa dikoreksi dan ditambahin yaa!";
 
   let message = `୨୧ ──── 𝐃𝐀𝐈𝐋𝐘 𝐂𝐋𝐀𝐒𝐒 𝐈𝐍𝐅𝐎 ──── ୨୧\n\n🗓️ ${targetDateStr}\n\n`;

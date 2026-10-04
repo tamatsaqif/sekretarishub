@@ -53,6 +53,27 @@ export const MONTH_NAMES = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
 
+export const COMPLETED_TASKS_KEY = "sekretaris9scp2-completed-tasks";
+
+export function getCompletedTaskIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(COMPLETED_TASKS_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveCompletedTaskId(id, isCompleted) {
+  const set = getCompletedTaskIds();
+  if (isCompleted) {
+    set.add(id);
+  } else {
+    set.delete(id);
+  }
+  localStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify([...set]));
+  return set;
+}
+
 // ============================================================
 // FORMATTERS & HELPERS
 // ============================================================

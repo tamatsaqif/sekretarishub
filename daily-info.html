@@ -228,7 +228,8 @@
         escapeHtml,
         showToast,
         initGridPulse,
-        setupNavigation
+        setupNavigation,
+        getCompletedTaskIds
       } from "./shared.js";
       import {
         fetchSchedule,
@@ -427,7 +428,8 @@
 
         const subjects = state.schedule[targetKey] || [];
         const piket = state.piket[targetKey] || [];
-        const tasks = state.tasks || [];
+        const completedIds = getCompletedTaskIds();
+        const tasks = (state.tasks || []).filter((task) => !completedIds.has(task.id));
         const note = state.notes.trim() || "Kalau ada yang kurang atau salah bisa dikoreksi dan ditambahin yaa!";
 
         let message = `୨୧ ──── 𝐃𝐀𝐈𝐋𝐘 𝐂𝐋𝐀𝐒𝐒 𝐈𝐍𝐅𝐎 ──── ୨୧\n\n🗓️ ${targetDateStr}\n\n`;
@@ -676,6 +678,12 @@
         renderAttendance();
         renderPreview();
       }
+
+      window.addEventListener("storage", (e) => {
+        if (e.key === "sekretaris9scp2-completed-tasks") {
+          renderPreview();
+        }
+      });
 
       notesInput.value = state.notes;
       renderSchedule();

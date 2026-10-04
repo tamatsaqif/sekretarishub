@@ -193,7 +193,8 @@
         getDeadlineUrgency,
         escapeHtml,
         initGridPulse,
-        setupNavigation
+        setupNavigation,
+        getCompletedTaskIds
       } from "./shared.js";
       import { fetchSchedule, fetchPiket, fetchTasks } from "./supabase.js";
 
@@ -269,8 +270,10 @@
         // Tasks
         try {
           const tasks = await fetchTasks();
-          if (tasks && tasks.length) {
-            const nearest = tasks[0];
+          const completedIds = getCompletedTaskIds();
+          const activeTasks = (tasks || []).filter((t) => !completedIds.has(t.id));
+          if (activeTasks.length) {
+            const nearest = activeTasks[0];
             const urgency = getDeadlineUrgency(nearest.deadline);
             homeTaskPreview.innerHTML = `
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">

@@ -126,16 +126,16 @@
         escapeHtml,
         showToast,
         initGridPulse,
-        setupNavigation
+        setupNavigation,
+        COMPLETED_TASKS_KEY,
+        getCompletedTaskIds
       } from "./shared.js";
       import { fetchTasks, insertTask, updateTask, deleteTask } from "./supabase.js";
 
       initGridPulse();
       setupNavigation("tugas");
 
-      const TASKS_STORAGE_KEY = "sekretaris9scp2-tasks-list";
-      const COMPLETED_STORAGE_KEY = "sekretaris9scp2-completed-tasks";
-      let completedTaskIds = new Set(JSON.parse(localStorage.getItem(COMPLETED_STORAGE_KEY) || "[]"));
+      let completedTaskIds = getCompletedTaskIds();
 
       let tasks = JSON.parse(localStorage.getItem(TASKS_STORAGE_KEY) || "[]");
       let currentFilter = "pending"; // pending | completed | deadline | all
@@ -165,7 +165,7 @@
       }
 
       function saveCompletedIds() {
-        localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify([...completedTaskIds]));
+        localStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify([...completedTaskIds]));
       }
 
       function renderTasks() {
