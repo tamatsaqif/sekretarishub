@@ -4,5 +4,9 @@
   "type": "module",
   "scripts": {
     "build": "node build.js"
+  },
+  "dependencies": {
+    "lucide": "^1.69.0",
+    "motion": "^14.9.1"
   }
 }

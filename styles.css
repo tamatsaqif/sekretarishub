@@ -9,68 +9,68 @@
   --font-text: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", Menlo, Monaco, Consolas, monospace;
 
-  /* Strict Monochrome Color Palette */
-  --bg-base: #F8F8F8;
-  --bg-subtle: #F2F2F2;
+  /* Strict Minimalist Grayscale Palette */
+  --bg-base: #FBFBF9;
+  --bg-subtle: #F4F4F1;
   --surface-white: #FFFFFF;
   --surface-elevated: #FFFFFF;
   --surface-card: #FFFFFF;
-  --surface-subtle: #F5F5F7;
-  --surface-translucent: rgba(255, 255, 255, 0.85);
-  --surface-glass: rgba(255, 255, 255, 0.78);
-  --surface-glass-dark: rgba(29, 29, 31, 0.92);
+  --surface-subtle: #F4F4F1;
+  --surface-translucent: rgba(251, 251, 249, 0.9);
+  --surface-glass: rgba(251, 251, 249, 0.85);
+  --surface-glass-dark: rgba(36, 36, 38, 0.95);
 
-  /* Lines & Borders */
-  --line-subtle: rgba(0, 0, 0, 0.05);
-  --line-neutral: rgba(0, 0, 0, 0.09);
-  --line-strong: rgba(0, 0, 0, 0.16);
-  --line-border: #E5E5E5;
+  /* Lines Borders */
+  --line-subtle: rgba(0, 0, 0, 0.04);
+  --line-neutral: rgba(0, 0, 0, 0.08);
+  --line-strong: rgba(0, 0, 0, 0.12);
+  --line-border: #E8E8E4;
 
   /* Text Colors */
-  --ink-primary: #1D1D1F;
-  --ink-secondary: #555558;
-  --ink-muted: #8E8E93;
-  --ink-tertiary: #A1A1A6;
+  --ink-primary: #242424;
+  --ink-secondary: #74746C;
+  --ink-muted: #9E9E96;
+  --ink-tertiary: #B0B0A8;
   --ink-inverted: #FFFFFF;
 
   /* Restrained Neutral Accents */
-  --accent-black: #1D1D1F;
+  --accent-black: #242424;
   --accent-hover: #000000;
-  --accent-light: #F2F2F2;
-  --accent-badge-bg: #EAEAEA;
-  --accent-badge-text: #1D1D1F;
+  --accent-light: #F4F4F1;
+  --accent-badge-bg: #EFEFEE;
+  --accent-badge-text: #242424;
 
   /* Status Tones (Monochrome/Restrained) */
-  --status-active-bg: #1D1D1F;
+  --status-active-bg: #242424;
   --status-active-fg: #FFFFFF;
-  --status-neutral-bg: #EFEFEF;
-  --status-neutral-fg: #1D1D1F;
-  --status-subtle-border: #E5E5E5;
+  --status-neutral-bg: #EFEFEE;
+  --status-neutral-fg: #242424;
+  --status-subtle-border: #E8E8E4;
 
-  /* Radii Scale */
+  /* Radii Scale (Consistent 12px / 16px) */
   --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-2xl: 22px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 16px;
   --radius-pill: 9999px;
 
-  /* Shadows (Soft & Realistic) */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --shadow-drawer: -12px 0 40px rgba(0, 0, 0, 0.16);
+  /* Shadows (Flat & Minimalist) */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.08);
 
   /* Animation */
-  --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-apple: cubic-bezier(0.221, 0.361);
   --duration-fast: 150ms;
   --duration-normal: 220ms;
   --duration-slow: 350ms;
 
   /* Container */
-  --max-width: 1100px;
+  --max-width: 1000px;
 }
 
 /* ============================================================
