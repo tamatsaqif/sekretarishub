@@ -313,89 +313,75 @@ export function setupNavigation(activePage = "home") {
   if (!headerContainer) return;
 
   const navItems = [
-    { key: "home", label: "Home", href: "/", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>` },
-    { key: "daily-info", label: "Daily Info", href: "/daily-info", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>` },
-    { key: "tugas", label: "Tugas", href: "/tugas", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>` },
-    { key: "piket", label: "Piket", href: "/piket", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>` },
-    { key: "anggota", label: "Anggota", href: "/anggota", icon: `<svg class="icon-svg mini" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>` },
+    {
+      key: "home", label: "Home", href: "/",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`
+    },
+    {
+      key: "daily-info", label: "Daily Info", href: "/daily-info",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`
+    },
+    {
+      key: "tugas", label: "Tugas", href: "/tugas",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`
+    },
+    {
+      key: "piket", label: "Piket", href: "/piket",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>`
+    },
+    {
+      key: "anggota", label: "Anggota", href: "/anggota",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`
+    },
   ];
 
+  // ── Minimal top bar ──
   headerContainer.innerHTML = `
-    <div class="header-container">
+    <div class="topbar-inner">
       <a href="/" class="brand-group" aria-label="Web Kelas 9 SCP 2">
         <span class="brand-badge">9 SCP 2</span>
         <span class="brand-title">Class Space</span>
       </a>
-
-      <nav class="desktop-nav" aria-label="Navigasi Utama">
-        ${navItems
-          .map(
-            (item) => `
-          <a href="${item.href}" class="nav-link ${item.key === activePage ? "active" : ""}">
-            ${item.icon}
-            <span>${item.label}</span>
-          </a>
-        `
-          )
-          .join("")}
-      </nav>
-
-      <div class="header-actions">
-        <button id="globalLoginBtn" class="secret-login-btn" type="button" title="Masuk Mode Pengurus" aria-label="Login pengurus">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>
-        </button>
-
+      <div class="topbar-actions">
         <span id="globalAdminBadge" class="admin-badge hidden">
           <span id="globalAdminRoleText">Pengurus</span>
         </span>
-
         <button id="globalLogoutBtn" class="btn-ghost btn-sm hidden" type="button" aria-label="Keluar">
           <span>Keluar</span>
         </button>
-
-        <button id="mobileNavToggleBtn" class="mobile-menu-toggle" type="button" aria-label="Buka menu navigasi">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        <button id="globalLoginBtn" class="secret-login-btn" type="button" title="Masuk Mode Pengurus" aria-label="Login pengurus">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>
         </button>
       </div>
     </div>
   `;
 
-  // Inject Mobile Drawer
-  let mobileDrawer = document.querySelector("#mobileNavBackdrop");
-  if (!mobileDrawer) {
-    mobileDrawer = document.createElement("div");
-    mobileDrawer.id = "mobileNavBackdrop";
-    mobileDrawer.className = "mobile-nav-backdrop";
-    mobileDrawer.setAttribute("aria-hidden", "true");
-    mobileDrawer.innerHTML = `
-      <div class="mobile-nav-sheet" role="dialog" aria-modal="true" aria-label="Menu navigasi">
-        <div class="mobile-nav-head">
-          <div class="brand-group">
-            <span class="brand-badge">9 SCP 2</span>
-            <span class="brand-title">Menu</span>
-          </div>
-          <button type="button" class="drawer-close-btn" id="closeMobileNavBtn" aria-label="Tutup menu">×</button>
-        </div>
-        <ul class="mobile-nav-list">
-          ${navItems
-            .map(
-              (item) => `
-            <li>
-              <a href="${item.href}" class="mobile-nav-link ${item.key === activePage ? "active" : ""}">
-                ${item.icon}
-                <span>${item.label}</span>
-              </a>
-            </li>
-          `
-            )
-            .join("")}
-        </ul>
-      </div>
+  // ── Bottom dock ──
+  let dockWrapper = document.querySelector("#mainDockWrapper");
+  if (!dockWrapper) {
+    dockWrapper = document.createElement("div");
+    dockWrapper.id = "mainDockWrapper";
+    dockWrapper.className = "dock-wrapper";
+    dockWrapper.innerHTML = `
+      <nav class="dock" role="toolbar" aria-label="Navigasi Utama">
+        ${navItems.map((item) => `
+          <a href="${item.href}"
+             class="dock-item${item.key === activePage ? " dock-active" : ""}"
+             aria-label="${item.label}"
+             aria-current="${item.key === activePage ? "page" : "false"}">
+            <span class="dock-label">${item.label}</span>
+            <div class="dock-icon-wrap">
+              ${item.icon}
+            </div>
+            <span class="dock-active-dot"></span>
+          </a>
+        `).join("")}
+      </nav>
     `;
-    document.body.appendChild(mobileDrawer);
+    document.body.appendChild(dockWrapper);
   }
 
-  // Inject Auth Modal if not already present
+  // ── Auth Modal ──
   let authModal = document.querySelector("#authLoginModal");
   if (!authModal) {
     authModal = document.createElement("div");
@@ -436,9 +422,7 @@ export function setupNavigation(activePage = "home") {
     document.body.appendChild(authModal);
   }
 
-  // Event Handlers for Mobile Menu & Auth
-  const mobileToggleBtn = document.querySelector("#mobileNavToggleBtn");
-  const closeMobileNavBtn = document.querySelector("#closeMobileNavBtn");
+  // ── Event handlers ──
   const openLoginBtn = document.querySelector("#globalLoginBtn");
   const logoutBtn = document.querySelector("#globalLogoutBtn");
   const adminBadge = document.querySelector("#globalAdminBadge");
@@ -462,12 +446,6 @@ export function setupNavigation(activePage = "home") {
     el.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
   };
-
-  mobileToggleBtn?.addEventListener("click", () => openDrawer(mobileDrawer));
-  closeMobileNavBtn?.addEventListener("click", () => closeDrawer(mobileDrawer));
-  mobileDrawer?.addEventListener("click", (e) => {
-    if (e.target === mobileDrawer) closeDrawer(mobileDrawer);
-  });
 
   const openAuth = () => {
     openDrawer(authModal);
@@ -542,7 +520,6 @@ export function setupNavigation(activePage = "home") {
       adminRoleText.textContent = name.charAt(0).toUpperCase() + name.slice(1);
     }
 
-    // Toggle any admin-only element on the page
     document.querySelectorAll(".admin-only").forEach((el) => {
       el.classList.toggle("hidden", !isLoggedIn);
     });
@@ -550,6 +527,49 @@ export function setupNavigation(activePage = "home") {
 
   getSession().then((session) => syncAuthState(session));
   onAuthChange((session) => syncAuthState(session));
+
+  // ── Dock magnification (desktop only) ──
+  const dockEl = document.querySelector(".dock");
+  if (dockEl && !window.matchMedia("(hover: none)").matches) {
+    const dockItems = Array.from(dockEl.querySelectorAll(".dock-item"));
+    const BASE = 48;
+    const MAX = 76;
+    const RANGE = 130;
+
+    dockEl.addEventListener("mousemove", (e) => {
+      dockItems.forEach((item) => {
+        const wrap = item.querySelector(".dock-icon-wrap");
+        if (!wrap) return;
+        const rect = wrap.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const dist = Math.abs(e.clientX - cx);
+        const t = Math.max(0, 1 - dist / RANGE);
+        const size = BASE + (MAX - BASE) * t * t * (3 - 2 * t); // smoothstep
+        wrap.style.width = size + "px";
+        wrap.style.height = size + "px";
+        const svg = wrap.querySelector("svg");
+        if (svg) {
+          const iconSize = Math.round(size * 0.42);
+          svg.style.width = iconSize + "px";
+          svg.style.height = iconSize + "px";
+        }
+      });
+    });
+
+    dockEl.addEventListener("mouseleave", () => {
+      dockItems.forEach((item) => {
+        const wrap = item.querySelector(".dock-icon-wrap");
+        if (!wrap) return;
+        wrap.style.width = "";
+        wrap.style.height = "";
+        const svg = wrap.querySelector("svg");
+        if (svg) {
+          svg.style.width = "";
+          svg.style.height = "";
+        }
+      });
+    });
+  }
 
   // Universal Link Routing for local development server support
   document.addEventListener("click", (event) => {
