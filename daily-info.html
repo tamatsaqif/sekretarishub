@@ -224,6 +224,7 @@
         getDateKey,
         formatDate,
         formatDeadline,
+        formatStudentName,
         getInitials,
         escapeHtml,
         showToast,
@@ -403,21 +404,31 @@
 
       function generateMessage(mode = currentPreviewMode) {
         if (mode === "attendance") {
-          const todayFormatted = formatDate();
-          const sakit = STUDENTS.filter((s) => state.attendance[s] === "Sakit");
-          const izin = STUDENTS.filter((s) => state.attendance[s] === "Izin");
-          const alpha = STUDENTS.filter((s) => state.attendance[s] === "Alpha");
-          const notPresent = [...sakit, ...izin, ...alpha];
+          const jakartaDate = new Intl.DateTimeFormat("id-ID", {
+            timeZone: "Asia/Jakarta",
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+          }).format(new Date());
 
-          let text = `📋 PRESENSI SISWA\n═══════════════════\n\n🗓️ ${todayFormatted}\n🏫 Kelas: 9 SCP 2\n\n`;
-          if (notPresent.length) {
-            notPresent.forEach((s, idx) => {
-              text += `${idx + 1}. ${s} (${state.attendance[s]})\n`;
-            });
+          const absentStudents = STUDENTS.filter((s) => {
+            const status = state.attendance[s];
+            return status === "Sakit" || status === "Izin" || status === "Alpha";
+          });
+
+          let text = `*📋 Presensi Siswa📋*\n\n`;
+          text += `📅 Hari/Tanggal: ${jakartaDate}\n`;
+          text += `🏫 Kelas: IXSCP2\n\n`;
+
+          if (absentStudents.length) {
+            text += absentStudents
+              .map((s, idx) => `${idx + 1}. ${formatStudentName(s)} (${state.attendance[s]})`)
+              .join("\n");
           } else {
-            text += `✓ Semua hadir! ✨\n`;
+            text += `NIHIL`;
           }
-          text += `\n═══════════════════\nhttps://science2hub.vercel.app`;
+
           return text;
         }
 
