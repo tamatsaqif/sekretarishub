@@ -340,7 +340,7 @@ Update `_headers` untuk izinkan domain baru di CSP yang sesuai (`script-src`, `s
 
 | # | Issue | Lokasi | Dampak |
 |---|---|---|---|
-| 1 | `--ease-apple: cubic-bezier(0.221, 0.361)` — hanya 2 argumen, butuh 4 | `styles.css:67` | Semua animasi jatuh ke easing default browser (`ease`) |
+| 1 | ~~`--ease-apple: cubic-bezier(0.221, 0.361)` — hanya 2 argumen, butuh 4~~ — **FIXED**: diperbarui ke `cubic-bezier(0.25, 0.46, 0.45, 0.94)` | `styles.css` | — |
 | 2 | `isBendahara()` selalu `return true` — tidak ada role check nyata | `kas.js:376` | Semua user yang login bisa modifikasi data kas |
 | 3 | Completion state tugas hanya localStorage — tidak sync ke Supabase | `tugas.html`, `shared.js` | Ganti browser / hapus storage = semua centang tugas hilang |
 | 4 | `CustomEvent("app:auth-changed")` di-dispatch tapi tidak ada listener | `shared.js:520` | Dead dispatch, tidak ada efek |

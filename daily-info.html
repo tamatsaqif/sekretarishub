@@ -99,8 +99,8 @@
 
           <textarea
             id="notesInput"
+            class="notes-textarea"
             rows="5"
-            style="width: 100%; flex: 1; min-height: 140px; padding: 12px 14px; background: var(--bg-subtle); border: 1px solid var(--line-neutral); border-radius: var(--radius-md); font-size: 0.875rem; line-height: 1.5; resize: vertical;"
             placeholder="Tulis catatan atau pengingat kelas untuk hari ini..."
           ></textarea>
         </section>
@@ -133,7 +133,7 @@
         </div>
 
         <!-- Attendance Stats Filter Pills -->
-        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+        <div class="filter-pills" style="margin-bottom: 12px;">
           <span class="filter-pill active" data-status="all">Semua <strong id="statTotalCount">33</strong></span>
           <span class="filter-pill" data-status="Masuk">Masuk <strong id="statMasukCount">33</strong></span>
           <span class="filter-pill" data-status="Sakit" id="pillSakit" style="display: none;">Sakit <strong id="statSakitCount">0</strong></span>

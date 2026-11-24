@@ -8,9 +8,7 @@
     { "source": "/info", "destination": "/daily-info.html" },
     { "source": "/tugas", "destination": "/tugas.html" },
     { "source": "/piket", "destination": "/piket.html" },
-    { "source": "/pengumuman", "destination": "/pengumuman.html" },
     { "source": "/anggota", "destination": "/anggota.html" },
-    { "source": "/kas-kelas", "destination": "/kas-kelas.html" },
     { "source": "/home", "destination": "/index.html" },
     { "source": "/", "destination": "/index.html" }
   ]
