@@ -1,0 +1,958 @@
+// bundle.js — AUTO-GENERATED, jangan edit manual
+// Generated: 2026-11-28T05:29:18.570Z
+(function (window) {
+  "use strict";
+
+  // ── ENV ─────────────────────────────────────────────────
+  // File ini di-generate otomatis saat build. Jangan edit manual.
+  const SUPABASE_URL = "https://xjbdeaalgbuuzleoxrcy.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqYmRlYWFsZ2J1dXpsZW94cmN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NTg5NTcsImV4cCI6MjEwNTIzNDk1N30.ebvLiHHCLNrp2E7f1lMlkDvuDAaujaQDpyDQI-Rs6Zk";
+
+
+  // ── SUPABASE ─────────────────────────────────────────────
+  // ============================================================
+  // SUPABASE CONFIG & API CLIENT — Web Kelas 9 SCP 2
+  // ============================================================
+  const cleanUrl = (SUPABASE_URL || "").trim();
+  const cleanKey = (SUPABASE_ANON_KEY || "").trim();
+  
+  const { createClient } = window.supabase || {};
+  const db = createClient && cleanUrl && cleanKey ? createClient(cleanUrl, cleanKey) : null;
+  
+  // ============================================================
+  // AUTH HELPERS
+  // ============================================================
+  async function signIn(email, password) {
+    if (!db) throw new Error("Supabase client belum terkonfigurasi.");
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  }
+  
+  async function signOut() {
+    if (!db) return;
+    const { error } = await db.auth.signOut();
+    if (error) throw error;
+  }
+  
+  async function getSession() {
+    if (!db) return null;
+    try {
+      const { data } = await db.auth.getSession();
+      return data?.session || null;
+    } catch {
+      return null;
+    }
+  }
+  
+  function onAuthChange(callback) {
+    if (!db) return () => {};
+    const { data } = db.auth.onAuthStateChange((_event, session) => {
+      callback(session);
+    });
+    return () => data?.subscription?.unsubscribe();
+  }
+  
+  // ============================================================
+  // ATTENDANCE
+  // ============================================================
+  async function fetchAttendance(date) {
+    if (!db) return {};
+    const { data, error } = await db
+      .from("attendance")
+      .select("student_name, status")
+      .eq("date", date);
+    if (error) throw error;
+    return Object.fromEntries((data || []).map((r) => [r.student_name, r.status]));
+  }
+  
+  async function upsertAttendance(date, studentName, status) {
+    if (!db) return;
+    const { error } = await db.from("attendance").upsert(
+      { date, student_name: studentName, status, updated_at: new Date().toISOString() },
+      { onConflict: "date,student_name" }
+    );
+    if (error) throw error;
+  }
+  
+  async function upsertAllAttendance(date, attendanceMap) {
+    if (!db) return;
+    const rows = Object.entries(attendanceMap).map(([student_name, status]) => ({
+      date,
+      student_name,
+      status,
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await db
+      .from("attendance")
+      .upsert(rows, { onConflict: "date,student_name" });
+    if (error) throw error;
+  }
+  
+  // ============================================================
+  // TASKS
+  // ============================================================
+  async function fetchTasks() {
+    if (!db) return [];
+    const { data, error } = await db
+      .from("tasks")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+  
+  async function insertTask(task) {
+    if (!db) {
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : `t-${Date.now()}`,
+        subject: task.subject,
+        description: task.description,
+        deadline: task.deadline,
+        created_at: new Date().toISOString()
+      };
+    }
+    const { data, error } = await db
+      .from("tasks")
+      .insert({ subject: task.subject, description: task.description, deadline: task.deadline })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+  
+  async function updateTask(id, task) {
+    if (!db) return;
+    const { error } = await db
+      .from("tasks")
+      .update({ subject: task.subject, description: task.description, deadline: task.deadline })
+      .eq("id", id);
+    if (error) throw error;
+  }
+  
+  async function deleteTask(id) {
+    if (!db) return;
+    const { error } = await db.from("tasks").delete().eq("id", id);
+    if (error) throw error;
+  }
+  
+  // ============================================================
+  // NOTES
+  // ============================================================
+  async function fetchNotes() {
+    if (!db) return null;
+    const { data, error } = await db
+      .from("notes")
+      .select("id, content")
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+  
+  async function saveNotes(content, existingId = null) {
+    if (!db) return;
+    if (existingId) {
+      const { error } = await db
+        .from("notes")
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq("id", existingId);
+      if (error) throw error;
+    } else {
+      const { error } = await db
+        .from("notes")
+        .insert({ content, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    }
+  }
+  
+  // ============================================================
+  // SCHEDULE
+  // ============================================================
+  async function fetchSchedule() {
+    if (!db) return {};
+    const { data, error } = await db.from("schedule").select("day, subjects");
+    if (error) throw error;
+    return Object.fromEntries((data || []).map((r) => [r.day, r.subjects]));
+  }
+  
+  async function saveSchedule(day, subjects) {
+    if (!db) return;
+    const { error } = await db
+      .from("schedule")
+      .upsert({ day, subjects }, { onConflict: "day" });
+    if (error) throw error;
+  }
+  
+  // ============================================================
+  // PIKET
+  // ============================================================
+  async function fetchPiket() {
+    if (!db) return {};
+    const { data, error } = await db.from("piket").select("day, students");
+    if (error) throw error;
+    return Object.fromEntries((data || []).map((r) => [r.day, r.students]));
+  }
+  
+  async function savePiket(day, students) {
+    if (!db) return;
+    const { error } = await db
+      .from("piket")
+      .upsert({ day, students }, { onConflict: "day" });
+    if (error) throw error;
+  }
+  
+  // ============================================================
+  // ANNOUNCEMENTS
+  // ============================================================
+  async function fetchAnnouncements() {
+    if (!db) return [];
+    try {
+      const { data, error } = await db
+        .from("announcements")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch {
+      return [];
+    }
+  }
+  
+  async function insertAnnouncement(announcement) {
+    if (!db) {
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : `a-${Date.now()}`,
+        title: announcement.title,
+        content: announcement.content,
+        tag: announcement.tag || "Info",
+        created_at: new Date().toISOString()
+      };
+    }
+    try {
+      const { data, error } = await db
+        .from("announcements")
+        .insert({
+          title: announcement.title,
+          content: announcement.content,
+          tag: announcement.tag || "Info"
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } catch {
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : `a-${Date.now()}`,
+        title: announcement.title,
+        content: announcement.content,
+        tag: announcement.tag || "Info",
+        created_at: new Date().toISOString()
+      };
+    }
+  }
+  
+  async function deleteAnnouncement(id) {
+    if (!db) return;
+    try {
+      await db.from("announcements").delete().eq("id", id);
+    } catch {
+      // fallback
+    }
+  }
+  
+
+  // ── SHARED ───────────────────────────────────────────────
+  // ============================================================
+  // SHARED UTILITIES & UNIFIED NAVIGATION — Web Kelas 9 SCP 2
+  // ============================================================
+  // ============================================================
+  // THEME SYSTEM
+  // ============================================================
+  const THEME_KEY = "9scp2-theme";
+
+  function initTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const theme = saved || preferred;
+    document.documentElement.setAttribute("data-theme", theme);
+    // Delay adding transition class to avoid flash on load
+    requestAnimationFrame(() => {
+      setTimeout(() => document.documentElement.classList.add("theme-ready"), 100);
+    });
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute("data-theme") || "light";
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem(THEME_KEY, next);
+    // Update all theme toggle icons on page
+    document.querySelectorAll(".theme-toggle-btn").forEach((btn) => {
+      btn.setAttribute("aria-label", next === "dark" ? "Aktifkan Light Mode" : "Aktifkan Dark Mode");
+    });
+  }
+
+  const STUDENTS = [
+    "ADZKIYA SAFWA A",
+    "ALIYAH NUR L",
+    "ALTHAF ZISAN AR",
+    "ANDI NAUFAL N",
+    "ASHFA HADZIQ H",
+    "ASYIFA NAISILA J",
+    "BETHARI JANITRA IW",
+    "BILLIE RAIHAN S",
+    "DAFFA RIDHO A",
+    "DELISA ASZAHRA P",
+    "DHAFIN DZIMAR",
+    "DIMAS NARENDRA W",
+    "DIRA SHASMIRA R",
+    "EDDLYN ARSY Z",
+    "FADIPTA JAVAS A",
+    "KEI EZHAR A",
+    "KENZO JABBAR LBS",
+    "MALVINO APRILIO PI",
+    "MARITZA ADILIA S",
+    "M DAFFA RAFANDRA",
+    "M NABIL DAVIAN N",
+    "M GHAISAN W",
+    "M RAFA RABBANI H",
+    "M RAFI SYAHPUTRA A",
+    "NAURA KARENZA A Z",
+    "NAYOTTAMA AZ",
+    "SABRINA VIDI A",
+    "VELIKA JASMIN CK",
+    "VINNO IBRAHIM A",
+    "WIDYATAMAKA ZT",
+    "YUDHISTIRA PW",
+    "ZAHRA LAILIA R",
+    "ZUHAL ABDILLAH A"
+  ];
+
+  const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const DAY_LABELS_ID = {
+    Monday: "Senin",
+    Tuesday: "Selasa",
+    Wednesday: "Rabu",
+    Thursday: "Kamis",
+    Friday: "Jumat"
+  };
+
+  const MONTH_NAMES = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+
+  const COMPLETED_TASKS_KEY = "sekretaris9scp2-completed-tasks";
+  const TASKS_STORAGE_KEY = "sekretaris9scp2-tasks-list";
+
+  function getCompletedTaskIds() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(COMPLETED_TASKS_KEY) || "[]"));
+    } catch {
+      return new Set();
+    }
+  }
+
+  function saveCompletedTaskId(id, isCompleted) {
+    const set = getCompletedTaskIds();
+    if (isCompleted) {
+      set.add(id);
+    } else {
+      set.delete(id);
+    }
+    localStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify([...set]));
+    return set;
+  }
+
+  // ============================================================
+  // FORMATTERS & HELPERS
+  // ============================================================
+  function escapeHtml(text) {
+    return String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function formatStudentName(name) {
+    if (!name) return "";
+    return name
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+
+  function getInitials(name) {
+    if (!name) return "";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  function getDateKey(date = new Date()) {
+    const weekday = date.getDay();
+    const map = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const key = map[weekday];
+    return ["Saturday", "Sunday"].includes(key) ? "Monday" : key;
+  }
+
+  function formatDate(date = new Date()) {
+    return new Intl.DateTimeFormat("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }).format(date);
+  }
+
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0
+    }).format(amount || 0);
+  }
+
+  function deadlineToInput(value) {
+    if (!value) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const match = value.match(/,\s*(\d{1,2})\s+([A-Za-z]+)/);
+    if (!match) return "";
+    const month = MONTH_NAMES.findIndex((name) => name.toLowerCase() === match[2].toLowerCase());
+    if (month < 0) return "";
+    return `${new Date().getFullYear()}-${String(month + 1).padStart(2, "0")}-${String(match[1]).padStart(2, "0")}`;
+  }
+
+  function formatDeadline(value) {
+    const input = deadlineToInput(value);
+    if (!input) return value || "";
+    const date = new Date(`${input}T00:00:00`);
+    return `${new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(date)}, ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
+  }
+
+  function getDeadlineUrgency(value) {
+    const input = deadlineToInput(value);
+    if (!input) return { label: value || "—", urgentClass: "" };
+    const target = new Date(`${input}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = target - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return { label: `Lewat (${formatDeadline(value)})`, urgentClass: "urgent" };
+    } else if (diffDays === 0) {
+      return { label: `Hari Ini (${formatDeadline(value)})`, urgentClass: "urgent" };
+    } else if (diffDays === 1) {
+      return { label: `Besok (${formatDeadline(value)})`, urgentClass: "soon" };
+    } else if (diffDays <= 3) {
+      return { label: `${diffDays} hari lagi (${formatDeadline(value)})`, urgentClass: "soon" };
+    } else {
+      return { label: formatDeadline(value), urgentClass: "" };
+    }
+  }
+
+  // ============================================================
+  // TOAST NOTIFICATION
+  // ============================================================
+  function showToast(message, type = "success") {
+    let container = document.querySelector("#toastContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toastContainer";
+      container.className = "toast-container";
+      container.setAttribute("aria-live", "polite");
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.setAttribute("role", "status");
+
+    const iconSvg =
+      type === "error"
+        ? `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
+        : `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+    toast.innerHTML = `${iconSvg} <span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add("toast-exit");
+      setTimeout(() => toast.remove(), 260);
+    }, 2600);
+  }
+
+  // ============================================================
+  // CANVAS GRID PULSE ANIMATION
+  // ============================================================
+  function initGridPulse() {
+    const canvas = document.querySelector("#gridPulseCanvas");
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const cellSize = 28;
+    const cells = new Map();
+    let width = 0;
+    let height = 0;
+    let columns = 0;
+    let rows = 0;
+    let frame = 0;
+    let pointer = null;
+
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      columns = Math.ceil(width / cellSize);
+      rows = Math.ceil(height / cellSize);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      wake();
+    };
+
+    const wake = () => {
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
+
+    const light = (column, row, hold = 800) => {
+      if (column < 0 || row < 0 || column >= columns || row >= rows) return;
+      const key = `${column},${row}`;
+      const existing = cells.get(key);
+      const now = performance.now();
+      if (existing && existing.until > now) {
+        existing.until = Math.max(existing.until, now + hold * 0.35);
+        return;
+      }
+      cells.set(key, { column, row, born: now, until: now + hold });
+      wake();
+    };
+
+    const paint = () => {
+      if (!pointer) return;
+      const column = Math.floor(pointer.x / cellSize);
+      const row = Math.floor(pointer.y / cellSize);
+      for (let y = -2; y <= 2; y += 1) {
+        for (let x = -2; x <= 2; x += 1) {
+          if (Math.hypot(x, y) <= 2.4 && Math.random() > 0.3) {
+            light(column + x, row + y, 600 + Math.random() * 800);
+          }
+        }
+      }
+    };
+
+    const draw = (now) => {
+      frame = 0;
+      context.clearRect(0, 0, width, height);
+
+      // Resolve color from CSS variable so it adapts to dark mode
+      const style = getComputedStyle(document.documentElement);
+      const gridLine = style.getPropertyValue("--grid-line").trim() || "rgba(0,0,0,0.04)";
+      const gridCell = style.getPropertyValue("--grid-cell").trim() || "rgba(29,29,31,1)";
+
+      context.strokeStyle = gridLine;
+      context.lineWidth = 1;
+      context.beginPath();
+      for (let x = 0; x <= columns; x += 1) {
+        context.moveTo(x * cellSize + 0.5, 0);
+        context.lineTo(x * cellSize + 0.5, height);
+      }
+      for (let y = 0; y <= rows; y += 1) {
+        context.moveTo(0, y * cellSize + 0.5);
+        context.lineTo(width, y * cellSize + 0.5);
+      }
+      context.stroke();
+
+      for (const [key, cell] of cells) {
+        const elapsed = now - cell.born;
+        const remaining = cell.until - now;
+        if (remaining <= 0) {
+          cells.delete(key);
+          continue;
+        }
+        const alpha = Math.min(0.35, Math.min(1, elapsed / 180) * Math.min(1, remaining / 600) * 0.35);
+        // Parse gridCell as rgb/rgba base and apply alpha
+        context.fillStyle = gridCell.startsWith("rgba") || gridCell.startsWith("rgb")
+          ? gridCell.replace(/[\d.]+\)$/, `${alpha})`)
+          : `rgba(29, 29, 31, ${alpha})`;
+      if (cells.size) frame = requestAnimationFrame(draw);
+    };
+
+    const ambient = window.setInterval(() => {
+      light(Math.floor(Math.random() * columns), Math.floor(Math.random() * rows), 2000 + Math.random() * 1000);
+    }, 4000);
+
+    window.addEventListener("resize", resize);
+    window.addEventListener("pointermove", (event) => {
+      pointer = { x: event.clientX, y: event.clientY };
+      paint();
+    }, { passive: true });
+    resize();
+
+    window.addEventListener("beforeunload", () => {
+      clearInterval(ambient);
+      cancelAnimationFrame(frame);
+    }, { once: true });
+  }
+
+  // ============================================================
+  // SHARED NAVIGATION & AUTH MODAL
+  // ============================================================
+  function setupNavigation(activePage = "home") {
+    const headerContainer = document.querySelector("#siteHeader");
+    if (!headerContainer) return;
+
+    const navItems = [
+      {
+        key: "home", label: "Home", href: "/",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`
+      },
+      {
+        key: "daily-info", label: "Daily Info", href: "/daily-info",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`
+      },
+      {
+        key: "tugas", label: "Tugas", href: "/tugas",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`
+      },
+      {
+        key: "piket", label: "Piket", href: "/piket",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>`
+      },
+      {
+        key: "anggota", label: "Anggota", href: "/anggota",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`
+      },
+    ];
+
+    // ── Minimal top bar — 3-col grid: left | center brand | right actions ──
+    headerContainer.innerHTML = `
+      <div class="topbar-inner">
+        <div class="topbar-left">
+          <span id="globalAdminBadge" class="admin-badge hidden">
+            <span id="globalAdminRoleText">Pengurus</span>
+          </span>
+          <button id="globalLogoutBtn" class="btn-ghost btn-sm hidden" type="button" aria-label="Keluar">
+            <span>Keluar</span>
+          </button>
+        </div>
+        <a href="/" class="brand-group" aria-label="Web Kelas 9 SCP 2">
+          <span class="brand-badge">9SCP2</span>
+        </a>
+        <div class="topbar-actions">
+          <button
+            class="theme-toggle-btn"
+            id="globalThemeToggle"
+            type="button"
+            aria-label="Aktifkan Dark Mode"
+            title="Ganti tema"
+          >
+            <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button id="globalLoginBtn" class="secret-login-btn" type="button" title="Masuk Mode Pengurus" aria-label="Login pengurus">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // ── Bottom dock ──
+    let dockWrapper = document.querySelector("#mainDockWrapper");
+    if (!dockWrapper) {
+      dockWrapper = document.createElement("div");
+      dockWrapper.id = "mainDockWrapper";
+      dockWrapper.className = "dock-wrapper";
+      dockWrapper.innerHTML = `
+        <nav class="dock" role="toolbar" aria-label="Navigasi Utama">
+          ${navItems.map((item) => `
+            <a href="${item.href}"
+               class="dock-item${item.key === activePage ? " dock-active" : ""}"
+               aria-label="${item.label}"
+               aria-current="${item.key === activePage ? "page" : "false"}">
+              <span class="dock-label">${item.label}</span>
+              <div class="dock-icon-wrap">
+                ${item.icon}
+              </div>
+              <span class="dock-active-dot"></span>
+            </a>
+          `).join("")}
+        </nav>
+      `;
+      document.body.appendChild(dockWrapper);
+    }
+
+    // ── Auth Modal ──
+    let authModal = document.querySelector("#authLoginModal");
+    if (!authModal) {
+      authModal = document.createElement("div");
+      authModal.id = "authLoginModal";
+      authModal.className = "drawer-backdrop";
+      authModal.setAttribute("aria-hidden", "true");
+      authModal.innerHTML = `
+        <div class="drawer-panel" style="max-width: 420px;" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
+          <div class="drawer-head">
+            <div class="drawer-title-group">
+              <span class="drawer-tag">Autentikasi</span>
+              <h3 id="authDialogTitle">Mode Pengurus</h3>
+            </div>
+            <button type="button" class="drawer-close-btn" id="closeAuthModalBtn" aria-label="Tutup form login">×</button>
+          </div>
+          <form id="globalLoginForm" class="drawer-form">
+            <div class="drawer-body">
+              <p class="text-secondary" style="font-size: 0.875rem; margin-bottom: 16px;">
+                Masuk sebagai Sekretaris atau Bendahara untuk sinkronisasi data kelas.
+              </p>
+              <div class="field-group">
+                <label for="authInputUser">Username / Email</label>
+                <input id="authInputUser" type="text" placeholder="Masukkan username" required autocomplete="username" />
+              </div>
+              <div class="field-group">
+                <label for="authInputPass">Kata Sandi</label>
+                <input id="authInputPass" type="password" placeholder="••••••••" required autocomplete="current-password" />
+              </div>
+              <p id="authErrorMsg" class="form-error hidden" role="alert" style="margin-top: 8px;"></p>
+            </div>
+            <div class="drawer-footer">
+              <button type="button" class="btn-secondary" id="cancelAuthModalBtn">Batal</button>
+              <button type="submit" class="btn-primary" id="submitAuthBtn">Masuk</button>
+            </div>
+          </form>
+        </div>
+      `;
+      document.body.appendChild(authModal);
+    }
+
+    // ── Event handlers ──
+    const openLoginBtn = document.querySelector("#globalLoginBtn");
+    const logoutBtn = document.querySelector("#globalLogoutBtn");
+    const adminBadge = document.querySelector("#globalAdminBadge");
+    const adminRoleText = document.querySelector("#globalAdminRoleText");
+    const closeAuthModalBtn = document.querySelector("#closeAuthModalBtn");
+    const cancelAuthModalBtn = document.querySelector("#cancelAuthModalBtn");
+    const loginForm = document.querySelector("#globalLoginForm");
+    const authErrorMsg = document.querySelector("#authErrorMsg");
+    const authSubmitBtn = document.querySelector("#submitAuthBtn");
+
+    // Theme toggle
+    const themeToggleBtn = document.querySelector("#globalThemeToggle");
+    if (themeToggleBtn) {
+      // Sync aria-label with current theme
+      const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+      themeToggleBtn.setAttribute("aria-label", currentTheme === "dark" ? "Aktifkan Light Mode" : "Aktifkan Dark Mode");
+      themeToggleBtn.addEventListener("click", toggleTheme);
+    }
+
+    const openDrawer = (el) => {
+      if (!el) return;
+      el.classList.add("is-open");
+      el.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    };
+
+    const closeDrawer = (el) => {
+      if (!el) return;
+      el.classList.remove("is-open");
+      el.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    };
+
+    const openAuth = () => {
+      openDrawer(authModal);
+      if (authErrorMsg) {
+        authErrorMsg.classList.add("hidden");
+        authErrorMsg.textContent = "";
+      }
+      loginForm?.reset();
+    };
+
+    const closeAuth = () => closeDrawer(authModal);
+
+    openLoginBtn?.addEventListener("click", openAuth);
+    closeAuthModalBtn?.addEventListener("click", closeAuth);
+    cancelAuthModalBtn?.addEventListener("click", closeAuth);
+    authModal?.addEventListener("click", (e) => {
+      if (e.target === authModal) closeAuth();
+    });
+
+    logoutBtn?.addEventListener("click", async () => {
+      try {
+        await signOut();
+        showToast("Berhasil keluar.");
+        syncAuthState(null);
+      } catch (err) {
+        console.error("Logout error:", err);
+      }
+    });
+
+    loginForm?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const rawUser = document.querySelector("#authInputUser")?.value.trim().toLowerCase() || "";
+      const pass = document.querySelector("#authInputPass")?.value || "";
+
+      const email = rawUser.includes("@") ? rawUser : `${rawUser}@sekretaris.local`;
+
+      if (authSubmitBtn) {
+        authSubmitBtn.disabled = true;
+        authSubmitBtn.textContent = "Memproses...";
+      }
+      authErrorMsg?.classList.add("hidden");
+
+      try {
+        const session = await signIn(email, pass);
+        closeAuth();
+        showToast("Berhasil masuk!");
+        syncAuthState(session);
+        window.dispatchEvent(new CustomEvent("app:auth-changed", { detail: session }));
+      } catch (err) {
+        console.error("Login failed:", err);
+        if (authErrorMsg) {
+          authErrorMsg.textContent = err?.message || "Username atau kata sandi tidak sesuai.";
+          authErrorMsg.classList.remove("hidden");
+        }
+      } finally {
+        if (authSubmitBtn) {
+          authSubmitBtn.disabled = false;
+          authSubmitBtn.textContent = "Masuk";
+        }
+      }
+    });
+
+    function syncAuthState(session) {
+      const isLoggedIn = !!session;
+      openLoginBtn?.classList.toggle("hidden", isLoggedIn);
+      logoutBtn?.classList.toggle("hidden", !isLoggedIn);
+      adminBadge?.classList.toggle("hidden", !isLoggedIn);
+
+      if (isLoggedIn && adminRoleText) {
+        const email = session?.user?.email || "";
+        const name = email.split("@")[0] || "Pengurus";
+        adminRoleText.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+      }
+
+      document.querySelectorAll(".admin-only").forEach((el) => {
+        el.classList.toggle("hidden", !isLoggedIn);
+      });
+    }
+
+    getSession().then((session) => syncAuthState(session));
+    onAuthChange((session) => syncAuthState(session));
+
+    // ── Dock magnification (desktop only) ──
+    const dockEl = document.querySelector(".dock");
+    if (dockEl && !window.matchMedia("(hover: none)").matches) {
+      const dockItems = Array.from(dockEl.querySelectorAll(".dock-item"));
+      const BASE = 48;
+      const MAX = 76;
+      const RANGE = 130;
+
+      dockEl.addEventListener("mousemove", (e) => {
+        dockItems.forEach((item) => {
+          const wrap = item.querySelector(".dock-icon-wrap");
+          if (!wrap) return;
+          const rect = wrap.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const dist = Math.abs(e.clientX - cx);
+          const t = Math.max(0, 1 - dist / RANGE);
+          const size = BASE + (MAX - BASE) * t * t * (3 - 2 * t); // smoothstep
+          wrap.style.width = size + "px";
+          wrap.style.height = size + "px";
+          const svg = wrap.querySelector("svg");
+          if (svg) {
+            const iconSize = Math.round(size * 0.42);
+            svg.style.width = iconSize + "px";
+            svg.style.height = iconSize + "px";
+          }
+        });
+      });
+
+      dockEl.addEventListener("mouseleave", () => {
+        dockItems.forEach((item) => {
+          const wrap = item.querySelector(".dock-icon-wrap");
+          if (!wrap) return;
+          wrap.style.width = "";
+          wrap.style.height = "";
+          const svg = wrap.querySelector("svg");
+          if (svg) {
+            svg.style.width = "";
+            svg.style.height = "";
+          }
+        });
+      });
+    }
+
+    // Universal Link Routing for local development server support
+    document.addEventListener("click", (event) => {
+      const link = event.target.closest("a");
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("http") || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+
+      if ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && !href.endsWith(".html")) {
+        event.preventDefault();
+        const target = href === "/" || href === "/home" ? "/index.html" : `${href}.html`;
+        window.location.href = target;
+      }
+    });
+  }
+
+
+  // ── EXPORT KE WINDOW ────────────────────────────────────
+  window.WK = {
+    // env
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    // supabase
+    db,
+    signIn,
+    signOut,
+    getSession,
+    onAuthChange,
+    fetchAttendance,
+    upsertAttendance,
+    upsertAllAttendance,
+    fetchTasks,
+    insertTask,
+    updateTask,
+    deleteTask,
+    fetchNotes,
+    saveNotes,
+    fetchSchedule,
+    saveSchedule,
+    fetchPiket,
+    savePiket,
+    fetchAnnouncements,
+    insertAnnouncement,
+    deleteAnnouncement,
+    // shared
+    initTheme,
+    toggleTheme,
+    STUDENTS,
+    WEEKDAYS,
+    DAY_LABELS_ID,
+    MONTH_NAMES,
+    COMPLETED_TASKS_KEY,
+    TASKS_STORAGE_KEY,
+    getCompletedTaskIds,
+    saveCompletedTaskId,
+    escapeHtml,
+    formatStudentName,
+    getInitials,
+    getDateKey,
+    formatDate,
+    formatCurrency,
+    deadlineToInput,
+    formatDeadline,
+    getDeadlineUrgency,
+    showToast,
+    initGridPulse,
+    setupNavigation,
+  };
+
+})(window);

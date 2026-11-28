@@ -8,7 +8,7 @@ import { signIn, signOut, getSession, onAuthChange } from "./supabase.js";
 // ============================================================
 const THEME_KEY = "9scp2-theme";
 
-export function initTheme() {
+function initTheme() {
   const saved = localStorage.getItem(THEME_KEY);
   const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   const theme = saved || preferred;
@@ -19,7 +19,7 @@ export function initTheme() {
   });
 }
 
-export function toggleTheme() {
+function toggleTheme() {
   const current = document.documentElement.getAttribute("data-theme") || "light";
   const next = current === "dark" ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", next);
@@ -30,44 +30,44 @@ export function toggleTheme() {
   });
 }
 
-export const STUDENTS = [
-  "ADZKIYA SAFWA ANAKA",
-  "ALIYAH NUR LATHIFAH",
-  "ALTHAF ZISAN AYDIN R",
+const STUDENTS = [
+  "ADZKIYA SAFWA A",
+  "ALIYAH NUR L",
+  "ALTHAF ZISAN AR",
   "ANDI NAUFAL N",
   "ASHFA HADZIQ H",
-  "ASYIFA NAISILA JELITA",
+  "ASYIFA NAISILA J",
   "BETHARI JANITRA IW",
-  "BILLIE RAIHAN SAPUTRA",
-  "DAFFA RIDHO ALGHANI",
+  "BILLIE RAIHAN S",
+  "DAFFA RIDHO A",
   "DELISA ASZAHRA P",
   "DHAFIN DZIMAR",
   "DIMAS NARENDRA W",
-  "DIRA SHASMIRA RIANTI",
-  "EDDLYN ARSY ZUHAIR",
+  "DIRA SHASMIRA R",
+  "EDDLYN ARSY Z",
   "FADIPTA JAVAS A",
-  "KEI EZHAR ABHIMATA",
-  "KENZO JABBAR LEBCCA",
+  "KEI EZHAR A",
+  "KENZO JABBAR LBS",
   "MALVINO APRILIO PI",
   "MARITZA ADILIA S",
-  "MOCH DAFFA RAFANDRA",
-  "MOCH NABIL DAVIAN N",
-  "MUH GHAISAN WIMIANO",
-  "MUH RAFA RABBANI H",
-  "MUH RAFI SYAHPUTRA A",
+  "M DAFFA RAFANDRA",
+  "M NABIL DAVIAN N",
+  "M GHAISAN W",
+  "M RAFA RABBANI H",
+  "M RAFI SYAHPUTRA A",
   "NAURA KARENZA A Z",
-  "NAYOTTAMA AR",
-  "SABRINA VIDI ARETHA",
+  "NAYOTTAMA AZ",
+  "SABRINA VIDI A",
   "VELIKA JASMIN CK",
   "VINNO IBRAHIM A",
-  "WIDYATAMAKA ZAYYAN",
-  "YUDHISTIRA PERWIRA W",
+  "WIDYATAMAKA ZT",
+  "YUDHISTIRA PW",
   "ZAHRA LAILIA R",
-  "ZUHAL ABDILLAH AFKAR"
+  "ZUHAL ABDILLAH A"
 ];
 
-export const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-export const DAY_LABELS_ID = {
+const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const DAY_LABELS_ID = {
   Monday: "Senin",
   Tuesday: "Selasa",
   Wednesday: "Rabu",
@@ -75,15 +75,15 @@ export const DAY_LABELS_ID = {
   Friday: "Jumat"
 };
 
-export const MONTH_NAMES = [
+const MONTH_NAMES = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
 
-export const COMPLETED_TASKS_KEY = "sekretaris9scp2-completed-tasks";
-export const TASKS_STORAGE_KEY = "sekretaris9scp2-tasks-list";
+const COMPLETED_TASKS_KEY = "sekretaris9scp2-completed-tasks";
+const TASKS_STORAGE_KEY = "sekretaris9scp2-tasks-list";
 
-export function getCompletedTaskIds() {
+function getCompletedTaskIds() {
   try {
     return new Set(JSON.parse(localStorage.getItem(COMPLETED_TASKS_KEY) || "[]"));
   } catch {
@@ -91,7 +91,7 @@ export function getCompletedTaskIds() {
   }
 }
 
-export function saveCompletedTaskId(id, isCompleted) {
+function saveCompletedTaskId(id, isCompleted) {
   const set = getCompletedTaskIds();
   if (isCompleted) {
     set.add(id);
@@ -105,7 +105,7 @@ export function saveCompletedTaskId(id, isCompleted) {
 // ============================================================
 // FORMATTERS & HELPERS
 // ============================================================
-export function escapeHtml(text) {
+function escapeHtml(text) {
   return String(text || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -114,7 +114,7 @@ export function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
-export function formatStudentName(name) {
+function formatStudentName(name) {
   if (!name) return "";
   return name
     .toLowerCase()
@@ -123,21 +123,21 @@ export function formatStudentName(name) {
     .join(" ");
 }
 
-export function getInitials(name) {
+function getInitials(name) {
   if (!name) return "";
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export function getDateKey(date = new Date()) {
+function getDateKey(date = new Date()) {
   const weekday = date.getDay();
   const map = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const key = map[weekday];
   return ["Saturday", "Sunday"].includes(key) ? "Monday" : key;
 }
 
-export function formatDate(date = new Date()) {
+function formatDate(date = new Date()) {
   return new Intl.DateTimeFormat("id-ID", {
     weekday: "long",
     day: "numeric",
@@ -146,7 +146,7 @@ export function formatDate(date = new Date()) {
   }).format(date);
 }
 
-export function formatCurrency(amount) {
+function formatCurrency(amount) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
@@ -154,7 +154,7 @@ export function formatCurrency(amount) {
   }).format(amount || 0);
 }
 
-export function deadlineToInput(value) {
+function deadlineToInput(value) {
   if (!value) return "";
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
   const match = value.match(/,\s*(\d{1,2})\s+([A-Za-z]+)/);
@@ -164,14 +164,14 @@ export function deadlineToInput(value) {
   return `${new Date().getFullYear()}-${String(month + 1).padStart(2, "0")}-${String(match[1]).padStart(2, "0")}`;
 }
 
-export function formatDeadline(value) {
+function formatDeadline(value) {
   const input = deadlineToInput(value);
   if (!input) return value || "";
   const date = new Date(`${input}T00:00:00`);
   return `${new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(date)}, ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
 }
 
-export function getDeadlineUrgency(value) {
+function getDeadlineUrgency(value) {
   const input = deadlineToInput(value);
   if (!input) return { label: value || "—", urgentClass: "" };
   const target = new Date(`${input}T00:00:00`);
@@ -197,7 +197,7 @@ export function getDeadlineUrgency(value) {
 // ============================================================
 // TOAST NOTIFICATION
 // ============================================================
-export function showToast(message, type = "success") {
+function showToast(message, type = "success") {
   let container = document.querySelector("#toastContainer");
   if (!container) {
     container = document.createElement("div");
@@ -228,7 +228,7 @@ export function showToast(message, type = "success") {
 // ============================================================
 // CANVAS GRID PULSE ANIMATION
 // ============================================================
-export function initGridPulse() {
+function initGridPulse() {
   const canvas = document.querySelector("#gridPulseCanvas");
   const context = canvas?.getContext("2d");
   if (!canvas || !context || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -318,6 +318,9 @@ export function initGridPulse() {
       context.fillStyle = gridCell.startsWith("rgba") || gridCell.startsWith("rgb")
         ? gridCell.replace(/[\d.]+\)$/, `${alpha})`)
         : `rgba(29, 29, 31, ${alpha})`;
+      context.fillRect(cell.column * cellSize + 2, cell.row * cellSize + 2, cellSize - 3, cellSize - 3);
+    }
+
     if (cells.size) frame = requestAnimationFrame(draw);
   };
 
@@ -341,7 +344,7 @@ export function initGridPulse() {
 // ============================================================
 // SHARED NAVIGATION & AUTH MODAL
 // ============================================================
-export function setupNavigation(activePage = "home") {
+function setupNavigation(activePage = "home") {
   const headerContainer = document.querySelector("#siteHeader");
   if (!headerContainer) return;
 
@@ -638,3 +641,28 @@ export function setupNavigation(activePage = "home") {
     }
   });
 }
+
+export {
+  initTheme,
+  toggleTheme,
+  STUDENTS,
+  WEEKDAYS,
+  DAY_LABELS_ID,
+  MONTH_NAMES,
+  COMPLETED_TASKS_KEY,
+  TASKS_STORAGE_KEY,
+  getCompletedTaskIds,
+  saveCompletedTaskId,
+  escapeHtml,
+  formatStudentName,
+  getInitials,
+  getDateKey,
+  formatDate,
+  formatCurrency,
+  deadlineToInput,
+  formatDeadline,
+  getDeadlineUrgency,
+  showToast,
+  initGridPulse,
+  setupNavigation,
+};

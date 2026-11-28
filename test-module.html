@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
+<div id="out">Loading...</div>
+<script type="module">
+  import { escapeHtml } from './shared.js';
+  document.getElementById('out').textContent = 'OK: ' + escapeHtml('<test>');
+</script>
+</body>
+</html>
