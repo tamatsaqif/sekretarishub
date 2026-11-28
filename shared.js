@@ -3,6 +3,33 @@
 // ============================================================
 import { signIn, signOut, getSession, onAuthChange } from "./supabase.js";
 
+// ============================================================
+// THEME SYSTEM
+// ============================================================
+const THEME_KEY = "9scp2-theme";
+
+export function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  const theme = saved || preferred;
+  document.documentElement.setAttribute("data-theme", theme);
+  // Delay adding transition class to avoid flash on load
+  requestAnimationFrame(() => {
+    setTimeout(() => document.documentElement.classList.add("theme-ready"), 100);
+  });
+}
+
+export function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") || "light";
+  const next = current === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem(THEME_KEY, next);
+  // Update all theme toggle icons on page
+  document.querySelectorAll(".theme-toggle-btn").forEach((btn) => {
+    btn.setAttribute("aria-label", next === "dark" ? "Aktifkan Light Mode" : "Aktifkan Dark Mode");
+  });
+}
+
 export const STUDENTS = [
   "ADZKIYA SAFWA ANAKA",
   "ALIYAH NUR LATHIFAH",
@@ -260,7 +287,13 @@ export function initGridPulse() {
   const draw = (now) => {
     frame = 0;
     context.clearRect(0, 0, width, height);
-    context.strokeStyle = "rgba(0, 0, 0, 0.04)";
+
+    // Resolve color from CSS variable so it adapts to dark mode
+    const style = getComputedStyle(document.documentElement);
+    const gridLine = style.getPropertyValue("--grid-line").trim() || "rgba(0,0,0,0.04)";
+    const gridCell = style.getPropertyValue("--grid-cell").trim() || "rgba(29,29,31,1)";
+
+    context.strokeStyle = gridLine;
     context.lineWidth = 1;
     context.beginPath();
     for (let x = 0; x <= columns; x += 1) {
@@ -281,10 +314,10 @@ export function initGridPulse() {
         continue;
       }
       const alpha = Math.min(0.35, Math.min(1, elapsed / 180) * Math.min(1, remaining / 600) * 0.35);
-      context.fillStyle = `rgba(29, 29, 31, ${alpha})`;
-      context.fillRect(cell.column * cellSize + 2, cell.row * cellSize + 2, cellSize - 3, cellSize - 3);
-    }
-
+      // Parse gridCell as rgb/rgba base and apply alpha
+      context.fillStyle = gridCell.startsWith("rgba") || gridCell.startsWith("rgb")
+        ? gridCell.replace(/[\d.]+\)$/, `${alpha})`)
+        : `rgba(29, 29, 31, ${alpha})`;
     if (cells.size) frame = requestAnimationFrame(draw);
   };
 
@@ -335,19 +368,30 @@ export function setupNavigation(activePage = "home") {
     },
   ];
 
-  // ── Minimal top bar ──
+  // ── Minimal top bar — 3-col grid: left | center brand | right actions ──
   headerContainer.innerHTML = `
     <div class="topbar-inner">
-      <a href="/" class="brand-group" aria-label="Web Kelas 9 SCP 2">
-        <span class="brand-badge">9 SCP 2</span>
-        <span class="brand-title">Class Space</span>
-      </a>
-      <div class="topbar-actions">
+      <div class="topbar-left">
         <span id="globalAdminBadge" class="admin-badge hidden">
           <span id="globalAdminRoleText">Pengurus</span>
         </span>
         <button id="globalLogoutBtn" class="btn-ghost btn-sm hidden" type="button" aria-label="Keluar">
           <span>Keluar</span>
+        </button>
+      </div>
+      <a href="/" class="brand-group" aria-label="Web Kelas 9 SCP 2">
+        <span class="brand-badge">9SCP2</span>
+      </a>
+      <div class="topbar-actions">
+        <button
+          class="theme-toggle-btn"
+          id="globalThemeToggle"
+          type="button"
+          aria-label="Aktifkan Dark Mode"
+          title="Ganti tema"
+        >
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
         <button id="globalLoginBtn" class="secret-login-btn" type="button" title="Masuk Mode Pengurus" aria-label="Login pengurus">
           <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>
@@ -432,6 +476,15 @@ export function setupNavigation(activePage = "home") {
   const loginForm = document.querySelector("#globalLoginForm");
   const authErrorMsg = document.querySelector("#authErrorMsg");
   const authSubmitBtn = document.querySelector("#submitAuthBtn");
+
+  // Theme toggle
+  const themeToggleBtn = document.querySelector("#globalThemeToggle");
+  if (themeToggleBtn) {
+    // Sync aria-label with current theme
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    themeToggleBtn.setAttribute("aria-label", currentTheme === "dark" ? "Aktifkan Light Mode" : "Aktifkan Dark Mode");
+    themeToggleBtn.addEventListener("click", toggleTheme);
+  }
 
   const openDrawer = (el) => {
     if (!el) return;

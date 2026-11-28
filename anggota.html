@@ -6,6 +6,7 @@
     <title>Daftar Siswa — 9 SCP 2</title>
     <meta name="description" content="Daftar lengkap 33 siswa kelas 9 SCP 2 beserta nomor absen dan informasi kelas." />
     <meta name="theme-color" content="#F8F8F8" />
+    <script>!function(){var t=localStorage.getItem('9scp2-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}()</script>
     <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -113,11 +114,13 @@
         getInitials,
         escapeHtml,
         initGridPulse,
-        setupNavigation
+        setupNavigation,
+        initTheme
       } from "./shared.js";
       import { fetchPiket, fetchAttendance } from "./supabase.js";
       import { fetchAllPayments, fetchKasWeeks } from "./kas.js";
 
+      initTheme();
       initGridPulse();
       setupNavigation("anggota");
 
